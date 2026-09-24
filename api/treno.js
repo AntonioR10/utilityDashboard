@@ -18,53 +18,53 @@ export default async function handler(req, res) {
     }
 
     try {
-        // Chiamata alla versione mobile che funziona sempre
         const url = `http://www.viaggiatreno.it/vt_pax_internet/mobile/numero?numeroTreno=${numeroTreno}`;
         const response = await fetch(url, {
             headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
             }
         });
 
         if (!response.ok) {
-            throw new Error('Impossibile contattare ViaggiaTreno mobile');
+            throw new Error('Impossibile contattare ViaggiaTreno');
         }
 
         const html = await response.text();
 
-        // Funzione di supporto per estrarre i dati testuali dall'HTML tramite regex
-        const extract = (regex) => {
-            const match = html.match(regex);
-            return match ? match[1].trim() : '-';
-        };
-
-        // Estrazione dei dati principali visibili nella pagina
-        const datiTreno = {
-            numero: numeroTreno,
-            origine: extract(/Partenza programmata\s*:\s*<\/strong><br\s*\/?>\s*([^<]+)/i) || extract(/Partenza programmata\s*:\s*([0-9:]+)/i),
-            // Puliamo e strutturiamo i campi chiave
-            partenzaProgrammata: extract(/Partenza programmata\s*:\s*<\/span>([0-9:]+)/i),
-            partenzaEffettiva: extract(/Partenza effettiva\s*:\s*<\/span>([0-9:]+)/i),
-            binarioPrevistoPartenza: extract(/Binario Previsto\s*:\s*<\/span>([0-9-]+)/i),
-            binarioRealePartenza: extract(/Binario Reale\s*:\s*<\/span>([0-9-]+)/i),
-
-            arrivoProgrammato: extract(/Arrivo Programmato\s*:\s*<\/span>([0-9:]+)/i),
-            arrivoEffettivo: extract(/Arrivo effettivo\s*:\s*<\/span>([0-9:]+)/i),
-            binarioPrevistoArrivo: extract(/Binario Previsto\s*:\s*<\/span>([0-9-]+)/i) ?? extract(/Arrivo.*?Binario Previsto\s*:\s*([0-9-]+)/s),
-            binarioRealeArrivo: extract(/Binario Reale\s*:\s*<\/span>([0-9-]+)/i),
-
-            messaggioRitardo: extract(/(Il treno e' arrivato con[^<]+|Il treno risulta[^<]+|In orario[^<]*)/i)
-        };
-
-        // Se la pagina contiene un errore classico di treno inesistente
         if (html.includes("non trovato") || html.includes("Errore")) {
-            return res.status(404).json({ error: 'Treno non trovato o non disponibile.' });
+            return res.status(200).json({ attivo: false, messaggio: "Treno non trovato o non attivo" });
         }
 
-        return res.status(200).json(html); // Per ora puoi anche restituire l'html o testare l'estrazione
+        // Funzione helper per ripulire i tag HTML ed estrarre i testi
+        const extractField = (regex) => {
+            const match = html.match(regex);
+            return match ? match[1].replace(/<[^>]*>/g, '').trim() : null;
+        };
+
+        // Estrazione dati dalla pagina mobile di ViaggiaTreno
+        const partProg = extractField(/Partenza programmata\s*:\s*<\/strong><br\s*\/?>\s*([0-9:]+)/i) || extractField(/Partenza programmata\s*:\s*([0-9:]+)/i);
+        const partEff = extractField(/Partenza effettiva\s*:\s*<\/strong><br\s*\/?>\s*([0-9:]+)/i) || extractField(/Partenza effettiva\s*:\s*([0-9:]+)/i);
+        const binPrev = extractField(/Binario Previsto\s*:\s*<\/strong><br\s*\/?>\s*([0-9A-Za-z-]+)/i) || extractField(/Binario Previsto\s*:\s*([0-9A-Za-z-]+)/i);
+        const binReale = extractField(/Binario Reale\s*:\s*<\/strong><br\s*\/?>\s*([0-9A-Za-z-]+)/i) || extractField(/Binario Reale\s*:\s*([0-9A-Za-z-]+)/i);
+
+        const arrProg = extractField(/Arrivo Programmato\s*:\s*<\/strong><br\s*\/?>\s*([0-9:]+)/i) || extractField(/Arrivo Programmato\s*:\s*([0-9:]+)/i);
+        const arrEff = extractField(/Arrivo effettivo\s*:\s*<\/strong><br\s*\/?>\s*([0-9:]+)/i) || extractField(/Arrivo effettivo\s*:\s*([0-9:]+)/i);
+
+        // Stato del treno o eventuale ritardo scritto in fondo
+        const matchRitardo = html.match(/(Il treno e' arrivato con[^<]+|Il treno risulta[^<]+|In orario[^<]*|Il treno viaggia[^<]*)/i);
+        let statoTreno = matchRitardo ? matchRitardo[0].replace(/<[^>]*>/g, '').trim() : "In viaggio";
+
+        return res.status(200).json({
+            attivo: true,
+            compStatoTreno: statoTreno,
+            orarioPartenza: partEff || partProg || "--:--",
+            orarioArrivo: arrEff || arrProg || "--:--",
+            binarioRealPartenzaDescrizione: binReale || binPrev || "-",
+            stazioneUltimoRilevamento: "Aggiornato"
+        });
 
     } catch (error) {
         console.error('Errore:', error);
-        return res.status(500).json({ error: 'Errore interno del server.' });
+        return res.status(500).json({ error: error.message });
     }
 }
