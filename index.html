@@ -398,23 +398,23 @@
         // Database delle lezioni
         const orarioSettimanale = {
             "lunedi": [
-                {"inizio": "10:00", "fine": "12:00", "materia": "Network Infrastructure", "aula": "Edificio D 201", "lat_gps": "41.9051", "lon_gps": "12.5170"},
-                {"inizio": "16:00", "fine": "19:00", "materia": "Distributed Systems", "aula": "Edificio CU035 15", "lat_gps": "41.9011", "lon_gps": "12.5134"}
+                { "inizio": "10:00", "fine": "12:00", "materia": "Network Infrastructure", "aula": "Edificio D 201", "lat_gps": "41.9051", "lon_gps": "12.5170" },
+                { "inizio": "16:00", "fine": "19:00", "materia": "Distributed Systems", "aula": "Edificio CU035 15", "lat_gps": "41.9011", "lon_gps": "12.5134" }
             ],
             "martedi": [
-                {"inizio": "08:00", "fine": "10:00", "materia": "Cryptography", "aula": "Edificio C.Laurenziano 3L", "lat_gps": "41.9056", "lon_gps": "12.5176"}
+                { "inizio": "08:00", "fine": "10:00", "materia": "Cryptography", "aula": "Edificio C.Laurenziano 3L", "lat_gps": "41.9056", "lon_gps": "12.5176" }
             ],
             "mercoledi": [
-                {"inizio": "08:00", "fine": "10:00", "materia": "Security in Software Application", "aula": "Edificio C Aula Magna", "lat_gps": "41.9051", "lon_gps": "12.5170"},
-                {"inizio": "17:00", "fine": "19:00", "materia": "Distributed Systems", "aula": "Edificio C Aula Magna", "lat_gps": "41.9051", "lon_gps": "12.5170"}
+                { "inizio": "08:00", "fine": "10:00", "materia": "Security in Software Application", "aula": "Edificio C Aula Magna", "lat_gps": "41.9051", "lon_gps": "12.5170" },
+                { "inizio": "17:00", "fine": "19:00", "materia": "Distributed Systems", "aula": "Edificio C Aula Magna", "lat_gps": "41.9051", "lon_gps": "12.5170" }
             ],
             "giovedi": [
-                {"inizio": "14:00", "fine": "20:00", "materia": "Statistics", "aula": "Edificio CU007 Aula Inf XI", "lat_gps": "41.9049", "lon_gps": "12.5156"}
+                { "inizio": "14:00", "fine": "20:00", "materia": "Statistics", "aula": "Edificio CU007 Aula Inf XI", "lat_gps": "41.9049", "lon_gps": "12.5156" }
             ],
             "venerdi": [
-                {"inizio": "08:00", "fine": "11:00", "materia": "Network Infrastructure", "aula": "Edificio CU035 Aula C", "lat_gps": "41.9011", "lon_gps": "12.5134"},
-                {"inizio": "13:00", "fine": "16:00", "materia": "Security in Software Application", "aula": "Edificio G Aula G50", "lat_gps": "41.9051", "lon_gps": "12.5170"},
-                {"inizio": "16:00", "fine": "19:00", "materia": "Cryptography", "aula": "Edificio Scarpa 12 Aula 11", "lat_gps": "41.9062", "lon_gps": "12.5172"}
+                { "inizio": "08:00", "fine": "11:00", "materia": "Network Infrastructure", "aula": "Edificio CU035 Aula C", "lat_gps": "41.9011", "lon_gps": "12.5134" },
+                { "inizio": "13:00", "fine": "16:00", "materia": "Security in Software Application", "aula": "Edificio G Aula G50", "lat_gps": "41.9051", "lon_gps": "12.5170" },
+                { "inizio": "16:00", "fine": "19:00", "materia": "Cryptography", "aula": "Edificio Scarpa 12 Aula 11", "lat_gps": "41.9062", "lon_gps": "12.5172" }
             ],
             "sabato": [],
             "domenica": []
@@ -550,7 +550,38 @@
         // Avvio script
         aggiornaDashboard();
         caricaMeteo();
-        setInterval(aggiornaDashboard, 30000); // Aggiorna i minuti/orario ogni 30 secondi
+        setInterval(aggiornaDashboard, 30000);
+        async function caricaStatoTreno() {
+            const numeroTreno = "12733";
+            e
+            const targetUrl = `http://www.viaggiatreno.it/vt_pax_internet/mobile/numero?numeroTreno=${numeroTreno}`;
+
+            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
+
+            try {
+                const response = await fetch(proxyUrl);
+                const data = await response.json();
+
+                if (data.contents) {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(data.contents, 'text/html');
+
+                    const testoPagina = doc.body.textContent || "";
+
+                    if (testoPagina.includes("Non trovato") || testoPagina.length < 200) {
+                        console.warn("Treno non trovato o non attivo");
+                        document.getElementById('statoTrenoBox').textContent = "Treno non attivo";
+                        return;
+                    }
+
+                    console.Html = testoPagina;
+                    document.getElementById('statoTrenoBox').textContent = "Treno trovato e sincronizzato!";
+                }
+            } catch (e) {
+                console.error("Errore di connessione a ViaggiaTreno:", e);
+                document.getElementById('statoTrenoBox').textContent = "Errore caricamento treno";
+            }
+        }
     </script>
 
 </body>
