@@ -35,7 +35,6 @@ export default async function handler(req, res) {
             return res.status(200).json({ attivo: false, compStatoTreno: "Treno non trovato" });
         }
 
-        // Funzione di utilità per estrarre il testo dentro un blocco specifico dell'HTML
         const extractSection = (htmlString, startComment, endComment) => {
             const startIndex = htmlString.indexOf(startComment);
             if (startIndex === -1) return "";
@@ -44,12 +43,10 @@ export default async function handler(req, res) {
             return endIndex !== -1 ? subStr.substring(0, endIndex) : subStr;
         };
 
-        // Estraiamo le sezioni chiave delimitate dai commenti HTML originali
         const sezioneOrigine = extractSection(html, "<!-- ORIGINE -->", "<!-- ULTIMA FERMATA -->");
         const sezioneUltimaFermata = extractSection(html, "<!-- ULTIMA FERMATA -->", "<!-- LINK DETTAGLIO FERMATE -->");
         const sezioneDestinazione = extractSection(html, "<!-- DESTINAZIONE -->", "<!-- SITUAZIONE -->");
 
-        // Helper per trovare l'h2 e i valori all'interno di una sezione
         const getH2 = (section) => {
             const match = section.match(/<h2>(.*?)<\/h2>/i);
             return match ? match[1].replace(/<[^>]*>/g, '').trim() : null;
@@ -68,12 +65,31 @@ export default async function handler(req, res) {
         const binRealePart = matchValoreInSezione(sezioneOrigine, 'Binario\\s*Reale\\s*:<br\\s*[^>]*>\\s*<strong>([0-9A-Za-z-]+)</strong>');
         const binPrevPart = matchValoreInSezione(sezioneOrigine, 'Binario\\s*Previsto\\s*:<br\\s*[^>]*>\\s*([0-9A-Za-z-]+)');
 
-        // 2. Ultima Fermata (se presente nell'HTML)
+        // 4. Stato del treno (lo ricaviamo prima così possiamo usarlo per capire lo stato)
+        const matchStato = html.match(/<div\s+class="evidenziato"><strong>([\s\S]*?)<\/strong>/i);
+        let statoTreno = matchStato ? matchStato[1].replace(/<[^>]*>/g, '').replace(/&#039;/g, "'").replace(/\s+/g, ' ').trim() : "In viaggio";
+
+        const indexUltimo = statoTreno.indexOf("Ultimo rilevamento");
+        if (indexUltimo !== -1) {
+            statoTreno = statoTreno.substring(0, indexUltimo).trim();
+        }
+
+        // 2. Ultima Fermata / Stato intermedio dinamico
         let ultimaFermataDescrizione = "In partenza";
         if (sezioneUltimaFermata.includes("corpocentrale")) {
             const h2Fermata = getH2(sezioneUltimaFermata);
             if (h2Fermata) {
                 ultimaFermataDescrizione = h2Fermata;
+            }
+        } else {
+            // Se la sezione dell'ultima fermata non esiste, deduciamo lo stato corretto dalla pagina
+            const statoLower = statoTreno.toLowerCase();
+            if (statoLower.includes("arrivato")) {
+                ultimaFermataDescrizione = "Arrivato";
+            } else if (!partEff || statoLower.includes("non è ancora partito")) {
+                ultimaFermataDescrizione = "In partenza";
+            } else {
+                ultimaFermataDescrizione = "In viaggio";
             }
         }
 
@@ -81,17 +97,6 @@ export default async function handler(req, res) {
         const stazioneArrivoTreno = getH2(sezioneDestinazione) || "MINTURNO-SCAURI";
         const arrProg = matchValoreInSezione(sezioneDestinazione, 'Arrivo Programmato\\s*:<br\\s*/?>\\s*<strong>\\s*([0-9:]+)');
         const arrPrev = matchValoreInSezione(sezioneDestinazione, 'Arrivo previsto\\s*:<br\\s*/?>\\s*<strong>([0-9:]+)');
-
-        // 4. Stato del treno
-        // Stato del treno in fondo
-        const matchStato = html.match(/<div\s+class="evidenziato"><strong>([\s\S]*?)<\/strong>/i);
-        let statoTreno = matchStato ? matchStato[1].replace(/<[^>]*>/g, '').replace(/&#039;/g, "'").replace(/\s+/g, ' ').trim() : "In viaggio";
-
-        // Rimuove la parte dell'ultimo rilevamento lasciando solo lo stato principale (es. ritardo)
-        const indexUltimo = statoTreno.indexOf("Ultimo rilevamento");
-        if (indexUltimo !== -1) {
-            statoTreno = statoTreno.substring(0, indexUltimo).trim();
-        }
 
         const oggiStringa = new Date().toISOString().split('T')[0];
         const oraP = partEff || partProg || "00:00";
