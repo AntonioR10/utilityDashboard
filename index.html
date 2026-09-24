@@ -374,7 +374,7 @@
                 </div>
             </div>
         </div>
-        <!-- Box Due Treni Compatto -->
+        <!-- Box Due Treni Compatto con Posizione -->
         <div class='card'>
             <h2><span>Stato Treni</span><span class='badge' id='trenoBadge'>Live</span></h2>
             <div style='font-size: 13px; display: flex; flex-direction: column-reverse; gap: 8px; padding-top: 4px;'>
@@ -386,26 +386,44 @@
                         style='font-weight: 600; color: var(--accent); font-size: 12px; border-bottom: 1px solid var(--border); padding-bottom: 2px;'>
                         🚆 Andata (12733): Caricamento...
                     </div>
-                    <div style='display: flex; justify-content: space-between; align-items: center; font-size: 12px;'>
-                        <span>Partenza: <strong id='partAndata'>--:--</strong> (Bin. <span
-                                id='binAndata'>-</span>)</span>
-                        <span>➔</span>
-                        <span>Arrivo: <strong id='arrAndata'>--:--</strong></span>
+                    <div
+                        style='display: flex; justify-content: space-between; align-items: center; font-size: 11px; text-align: center;'>
+                        <div style='flex: 1; text-align: left;'>
+                            Part: <strong id='partAndata'>--:--</strong> <span style='color: var(--muted);'>(Bin. <span
+                                    id='binAndata'>-</span>)</span>
+                        </div>
+                        <span style='color: var(--muted);'>➔</span>
+                        <div style='flex: 1; color: var(--accent); font-weight: 600;' id='posAndata'>
+                            --
+                        </div>
+                        <span style='color: var(--muted);'>➔</span>
+                        <div style='flex: 1; text-align: right;'>
+                            Arr: <strong id='arrAndata'>--:--</strong>
+                        </div>
                     </div>
                 </div>
 
                 <!-- TRENO RITORNO -->
                 <div
-                    style='background: var(--bg-secondary, rgba(255,255,255,0.05)); padding: 8px; border-radius: 6px; display: flex; flex-direction: column; gap: 4px;'>
+                    style='background: var(--bg-secondary, rgba(255,255,255,0.05)); padding-top: 8px; border-radius: 6px; display: flex; flex-direction: column; gap: 4px;'>
                     <div id='statoRitorno'
                         style='font-weight: 600; color: var(--accent); font-size: 12px; border-bottom: 1px solid var(--border); padding-bottom: 2px;'>
                         🚆 Ritorno (12734): Caricamento...
                     </div>
-                    <div style='display: flex; justify-content: space-between; align-items: center; font-size: 12px;'>
-                        <span>Partenza: <strong id='partRitorno'>--:--</strong> (Bin. <span
-                                id='binRitorno'>-</span>)</span>
-                        <span>➔</span>
-                        <span>Arrivo: <strong id='arrRitorno'>--:--</strong></span>
+                    <div
+                        style='display: flex; justify-content: space-between; align-items: center; font-size: 11px; text-align: center;'>
+                        <div style='flex: 1; text-align: left;'>
+                            Part: <strong id='partRitorno'>--:--</strong> <span style='color: var(--muted);'>(Bin. <span
+                                    id='binRitorno'>-</span>)</span>
+                        </div>
+                        <span style='color: var(--muted);'>➔</span>
+                        <div style='flex: 1; color: var(--accent); font-weight: 600;' id='posRitorno'>
+                            --
+                        </div>
+                        <span style='color: var(--muted);'>➔</span>
+                        <div style='flex: 1; text-align: right;'>
+                            Arr: <strong id='arrRitorno'>--:--</strong>
+                        </div>
                     </div>
                 </div>
 
@@ -432,7 +450,6 @@
     </div>
 
     <script>
-        // Database delle lezioni
         const orarioSettimanale = {
             "lunedi": [
                 { "inizio": "10:00", "fine": "12:00", "materia": "Network Infrastructure", "aula": "Edificio D 201", "lat_gps": "41.9051", "lon_gps": "12.5170" },
@@ -476,8 +493,7 @@
             if (c.startsWith("50")) return "🌫️";
             return "🌡️";
         }
-
-        // Aggiornamento orario e lezioni in tempo reale basato sul browser dell'utente
+        e
         function aggiornaDashboard() {
             const now = new Date();
 
@@ -581,7 +597,8 @@
         }
         async function caricaSingoloTreno(numeroTreno, prefisso) {
             const targetUrl = `http://www.viaggiatreno.it/vt_pax_internet/mobile/numero?numeroTreno=${numeroTreno}`;
-            const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
+            const proxyUrl = `https://thingproxy.freeboard.io/fetch/${targetUrl}`;
+
             try {
                 const response = await fetch(proxyUrl);
                 if (!response.ok) throw new Error();
@@ -601,23 +618,40 @@
                 let part = "--:--";
                 let arr = "--:--";
                 let bin = "-";
+                let posizione = "In partenza";
 
                 for (let i = 0; i < linee.length; i++) {
                     let l = linee[i];
-                    if (l.toLowerCase().includes("ritardo") || l.toLowerCase().includes("cancellato") || l.toLowerCase().includes("non e' ancora partito")) {
+
+                    if (l.toLowerCase().includes("ritardo") || l.toLowerCase().includes("cancellato") || l.toLowerCase().includes("non e' ancora partito") || l.toLowerCase().includes("viaggia")) {
                         stato = l;
                     }
-                    if (l.includes("Partenza programmata")) part = linee[i + 1] || "--:--";
-                    if (l.includes("Arrivo Programmato") || l.includes("Arrivo previsto")) arr = linee[i + 1] || "--:--";
-                    if (l.includes("Binario") && bin === "-") {
-                        let val = linee[i + 2] || linee[i + 1] || "-";
-                        if (!val.includes("Previsto") && !val.includes("Reale") && val.length < 3) bin = val;
+
+                    if (l.includes("Ultimo rilevamento a")) {
+                        let partiRilevamento = l.replace("Ultimo rilevamento a", "").split("alle");
+                        posizione = partiRilevamento[0].trim();
+                    }
+
+                    if (l.includes("Partenza programmata")) {
+                        part = linee[i + 1] || part;
+                    }
+
+                    if (l.includes("Arrivo previsto") || l.includes("Arrivo Programmato")) {
+                        arr = linee[i + 1] || arr;
+                    }
+
+                    if (l.includes("Binario Reale") || l.includes("Binario Previsto")) {
+                        let val = linee[i + 1];
+                        if (val && val !== "--" && val.length < 3) {
+                            bin = val;
+                        }
                     }
                 }
 
                 document.getElementById(`stato${prefisso}`).textContent = `🚆 ${prefisso} (${numeroTreno}): ${stato}`;
                 document.getElementById(`part${prefisso}`).textContent = part;
                 document.getElementById(`bin${prefisso}`).textContent = bin;
+                document.getElementById(`pos${prefisso}`).textContent = posizione;
                 document.getElementById(`arr${prefisso}`).textContent = arr;
 
             } catch (e) {
@@ -630,39 +664,37 @@
             // Ottiene il giorno della settimana (1 = Lunedì, 2 = Martedì, 3 = Mercoledì, 4 = Giovedì, 5 = Venerdì, ecc.)
             const oggi = new Date().getDay();
 
-            let trenoAndata = "12733"; // Treno di default (es. Lunedì)
-            let trenoRitorno = "12734"; // Treno di default
+            let trenoAndata = "12733";
+            let trenoRitorno = "12734";
 
-            // Personalizza i numeri in base al giorno della settimana
             if (oggi === 1) { // Lunedì
-                trenoAndata = "12733";
+                trenoAndata = "12730";
+                trenoRitorno = "21091";
+            } else if (oggi === 2) {
+                trenoAndata = "12726";
+                trenoRitorno = "21061";
+            } else if (oggi === 3) {
+                trenoAndata = "12726";
+                trenoRitorno = "21091";
+            } else if (oggi === 4) {
+                trenoAndata = "12736";
                 trenoRitorno = "12734";
-            } else if (oggi === 2) { // Martedì
-                trenoAndata = "12733";
-                trenoRitorno = "12734";
-            } else if (oggi === 3) { // Mercoledì
-                trenoAndata = "12733";
-                trenoRitorno = "12734";
-            } else if (oggi === 4) { // Giovedì
-                trenoAndata = "12733";
-                trenoRitorno = "12734";
-            } else if (oggi === 5) { // Venerdì
-                trenoAndata = "12733";
-                trenoRitorno = "12734";
+            } else if (oggi === 5) {
+                trenoAndata = "12726";
+                trenoRitorno = "21901";
             } else {
-                // Nel weekend o se i treni non sono previsti
+
                 document.getElementById('statoAndata').textContent = "🚆 Nessun treno oggi (Weekend)";
                 document.getElementById('statoRitorno').textContent = "🚆 Nessun treno oggi (Weekend)";
                 return;
             }
 
-            // Richiama la funzione per scaricare i dati dei treni del giorno
             caricaSingoloTreno(trenoAndata, "Andata");
             caricaSingoloTreno(trenoRitorno, "Ritorno");
         }
 
         aggiornaTreni();
-        setInterval(aggiornaTreni, 120000); // Aggiorna ogni 2 minuti
+        setInterval(aggiornaTreni, 120000);
 
         document.getElementById('modaleOrario').addEventListener('click', function (e) {
             if (e.target === this) chiudiOrario();
