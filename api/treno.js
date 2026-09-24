@@ -11,11 +11,7 @@ export default async function handler(req, res) {
         return res.status(200).end();
     }
 
-    const { numeroTreno } = req.query;
-
-    if (!numeroTreno) {
-        return res.status(400).json({ error: 'Specificare il numero del treno.' });
-    }
+    const { numeroTreno } = req.query || '12734';
 
     try {
         const url = `http://www.viaggiatreno.it/vt_pax_internet/mobile/numero?numeroTreno=${numeroTreno}`;
@@ -25,43 +21,14 @@ export default async function handler(req, res) {
             }
         });
 
-        if (!response.ok) {
-            throw new Error('Impossibile contattare ViaggiaTreno');
-        }
-
         const html = await response.text();
 
-        if (html.includes("non trovato") || html.includes("Errore")) {
-            return res.status(200).json({ attivo: false, messaggio: "Treno non trovato o non attivo" });
-        }
+        // STAMPA NEI LOG DI VERCEL
+        console.log("HTML RICEVUTO DA VIAGGIATRENO:", html);
 
-        // Funzione helper per ripulire i tag HTML ed estrarre i testi
-        const extractField = (regex) => {
-            const match = html.match(regex);
-            return match ? match[1].replace(/<[^>]*>/g, '').trim() : null;
-        };
-
-        // Estrazione dati dalla pagina mobile di ViaggiaTreno
-        const partProg = extractField(/Partenza programmata\s*:\s*<\/strong><br\s*\/?>\s*([0-9:]+)/i) || extractField(/Partenza programmata\s*:\s*([0-9:]+)/i);
-        const partEff = extractField(/Partenza effettiva\s*:\s*<\/strong><br\s*\/?>\s*([0-9:]+)/i) || extractField(/Partenza effettiva\s*:\s*([0-9:]+)/i);
-        const binPrev = extractField(/Binario Previsto\s*:\s*<\/strong><br\s*\/?>\s*([0-9A-Za-z-]+)/i) || extractField(/Binario Previsto\s*:\s*([0-9A-Za-z-]+)/i);
-        const binReale = extractField(/Binario Reale\s*:\s*<\/strong><br\s*\/?>\s*([0-9A-Za-z-]+)/i) || extractField(/Binario Reale\s*:\s*([0-9A-Za-z-]+)/i);
-
-        const arrProg = extractField(/Arrivo Programmato\s*:\s*<\/strong><br\s*\/?>\s*([0-9:]+)/i) || extractField(/Arrivo Programmato\s*:\s*([0-9:]+)/i);
-        const arrEff = extractField(/Arrivo effettivo\s*:\s*<\/strong><br\s*\/?>\s*([0-9:]+)/i) || extractField(/Arrivo effettivo\s*:\s*([0-9:]+)/i);
-
-        // Stato del treno o eventuale ritardo scritto in fondo
-        const matchRitardo = html.match(/(Il treno e' arrivato con[^<]+|Il treno risulta[^<]+|In orario[^<]*|Il treno viaggia[^<]*)/i);
-        let statoTreno = matchRitardo ? matchRitardo[0].replace(/<[^>]*>/g, '').trim() : "In viaggio";
-
-        return res.status(200).json({
-            attivo: true,
-            compStatoTreno: statoTreno,
-            orarioPartenza: partEff || partProg || "--:--",
-            orarioArrivo: arrEff || arrProg || "--:--",
-            binarioRealPartenzaDescrizione: binReale || binPrev || "-",
-            stazioneUltimoRilevamento: "Aggiornato"
-        });
+        // RESTITUISCE L'HTML DIRETTAMENTE AL BROWSER (o puoi vederlo aprendo l'API da browser)
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        return res.status(200).send(html);
 
     } catch (error) {
         console.error('Errore:', error);
