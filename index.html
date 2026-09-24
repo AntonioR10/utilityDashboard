@@ -595,36 +595,20 @@
             body.innerHTML = out;
         }
         async function caricaSingoloTreno(numeroTreno, prefisso) {
-            // Usiamo l'API JSON ufficiale di ViaggiaTreno per cercare il treno
-            const urlCerca = `https://www.viaggiatreno.it/vt_pax_internet/rest/viaggiatreno/cercaNumeroTreno/${numeroTreno}`;
-            const proxyUrl = `https://api.allorigins.win/get?url=` + encodeURIComponent(urlCerca);
+            // Chiamata diretta alla tua Serverless Function su Vercel
+            const urlApi = `/api/treno?numeroTreno=${numeroTreno}`;
 
             try {
-                const resCerca = await fetch(proxyUrl);
-                if (!resCerca.ok) throw new Error("Errore di rete");
+                const response = await fetch(urlApi);
+                if (!response.ok) throw new Error("Errore di rete");
 
-                const dataCerca = await resCerca.json();
-                const contenutoCerca = JSON.parse(dataCerca.contents);
+                const treno = await response.json();
 
-                if (!contenutoCerca || contenutoCerca === -1 || (Array.isArray(contenutoCerca) && contenutoCerca.length === 0)) {
+                if (treno.attivo === false) {
                     document.getElementById(`stato${prefisso}`).textContent = `🚆 ${prefisso} (${numeroTreno}): Non attivo`;
                     return;
                 }
 
-                // Estrapoliamo l'ID corretto del treno e la stazione di origine
-                const trenoInfo = Array.isArray(contenutoCerca) ? contenutoCerca[0] : contenutoCerca;
-                const idTreno = trenoInfo.id || trenoInfo;
-                const idStazione = trenoInfo.idStazioneOrigine || '';
-
-                // Chiamiamo l'andamento dettagliato in JSON
-                const urlDettaglio = `https://www.viaggiatreno.it/vt_pax_internet/rest/viaggiatreno/andamentoTreno/${idStazione}/${numeroTreno}/${idTreno}`;
-                const proxyDettaglio = `https://api.allorigins.win/get?url=` + encodeURIComponent(urlDettaglio);
-
-                const resDettaglio = await fetch(proxyDettaglio);
-                const dataDettaglio = await resDettaglio.json();
-                const treno = JSON.parse(dataDettaglio.contents);
-
-                // Estraiamo i dati puliti dall'oggetto JSON di Trenitalia
                 let stato = treno.compStatoTreno ? treno.compStatoTreno.replace(/<[^>]*>?/gm, '') : (treno.itinerario ? "In viaggio" : "In orario");
                 let part = treno.orarioPartenza ? new Date(treno.orarioPartenza).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "--:--";
                 let arr = treno.orarioArrivo ? new Date(treno.orarioArrivo).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "--:--";
@@ -635,7 +619,6 @@
                     stato = "CANCELLATO";
                 }
 
-                // Aggiorniamo la grafica della pagina
                 document.getElementById(`stato${prefisso}`).textContent = `🚆 ${prefisso} (${numeroTreno}): ${stato}`;
                 document.getElementById(`part${prefisso}`).textContent = part;
                 document.getElementById(`bin${prefisso}`).textContent = bin;
