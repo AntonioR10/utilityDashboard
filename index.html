@@ -55,7 +55,8 @@
                         </div>
                         <span style='color: var(--muted);'>➔</span>
                         <div style='flex: 1; text-align: right;'>
-                            Roma Termini: <strong id='arrAndata'>--:--</strong>
+                            Roma Termini: <strong id='arrAndata'>--:--</strong><span
+                                style='color: var(--muted);'><br>(Bin. <span id='binArrAndata'>-</span>)</span>
                         </div>
                     </div>
                 </div>
@@ -80,6 +81,7 @@
                         <span style='color: var(--muted);'>➔</span>
                         <div style='flex: 1; text-align: right;'>
                             Minturno-Scauri: <strong id='arrRitorno'>--:--</strong>
+                            <span style='color: var(--muted);'><br>(Bin. <span id='binArrRitorno'>-</span>)</span>
                         </div>
                     </div>
                 </div>
@@ -272,6 +274,7 @@
                 let part = treno.orarioPartenza ? new Date(treno.orarioPartenza).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "--:--";
                 let arr = treno.orarioArrivo ? new Date(treno.orarioArrivo).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "--:--";
                 let bin = treno.binarioRealPartenzaDescrizione || treno.binarioPrevistoPartenzaDescrizione || "-";
+                let binArr = treno.binarioRealArrivoDescrizione || treno.binarioPrevistoPartenzaDescrizione || "-";
                 let posizione = treno.ultimaFermata || "Arrivato/Non Partito";
 
                 if (treno.provvedimento === 1) {
@@ -280,6 +283,7 @@
 
                 document.getElementById(`stato${prefisso}`).textContent = `🚆 ${prefisso} (${numeroTreno}): ${stato}`;
                 document.getElementById(`part${prefisso}`).textContent = part;
+                document.getElementById(`binArr${prefisso}`).textContent = binArr;
                 document.getElementById(`bin${prefisso}`).textContent = bin;
                 document.getElementById(`pos${prefisso}`).textContent = posizione;
                 document.getElementById(`arr${prefisso}`).textContent = arr;

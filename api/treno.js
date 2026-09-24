@@ -97,6 +97,8 @@ export default async function handler(req, res) {
         const stazioneArrivoTreno = getH2(sezioneDestinazione) || "MINTURNO-SCAURI";
         const arrProg = matchValoreInSezione(sezioneDestinazione, 'Arrivo Programmato\\s*:<br\\s*/?>\\s*<strong>\\s*([0-9:]+)');
         const arrPrev = matchValoreInSezione(sezioneDestinazione, 'Arrivo previsto\\s*:<br\\s*/?>\\s*<strong>([0-9:]+)');
+        const binRealeArr = matchValoreInSezione(sezioneDestinazione, 'Binario\\s*Reale\\s*:<br\\s*[^>]*>\\s*<strong>([0-9A-Za-z-]+)</strong>');
+        const binPrevArr = matchValoreInSezione(sezioneDestinazione, 'Binario\\s*Previsto\\s*:<br\\s*[^>]*>\\s*([0-9A-Za-z-]+)');
 
         const oggiStringa = new Date().toISOString().split('T')[0];
         const oraP = partEff || partProg || "00:00";
@@ -108,7 +110,7 @@ export default async function handler(req, res) {
             orarioPartenza: oraP !== "--:--" ? `${oggiStringa}T${oraP}:00` : null,
             orarioArrivo: oraA !== "--:--" ? `${oggiStringa}T${oraA}:00` : null,
             binarioRealPartenzaDescrizione: binRealePart !== '--' ? binRealePart : (binPrevPart || "-"),
-            binarioRealArrivoDescrizione: "-",
+            binarioRealArrivoDescrizione: binRealeArr !== '--' ? binRealeArr : (binPrevArr || "-"),
             stazionePartenza: stazionePartenzaTreno,
             stazioneArrivo: stazioneArrivoTreno,
             ultimaFermata: ultimaFermataDescrizione
