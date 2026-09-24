@@ -551,58 +551,59 @@
         async function caricaStatoTreno() {
             const numeroTreno = "12733";
             const targetUrl = `http://www.viaggiatreno.it/vt_pax_internet/mobile/numero?numeroTreno=${numeroTreno}`;
-            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
+
+            // Usiamo l'endpoint /raw per ricevere direttamente il testo HTML
+            const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
 
             try {
                 const response = await fetch(proxyUrl);
-                const data = await response.json();
+                if (!response.ok) throw new Error("Risposta del server non valida");
 
-                if (data.contents) {
-                    const parser = new DOMParser();
-                    const doc = parser.parseFromString(data.contents, 'text/html');
+                const htmlText = await response.text();
 
-                    const testoPagina = doc.body.textContent || "";
-                    if (testoPagina.includes("Non trovato") || testoPagina.length < 200) {
-                        document.getElementById('trenoContenuto').innerHTML = "<div class='no-lezioni'>Treno non attivo o non trovato.</div>";
-                        document.getElementById('trenoBadge').textContent = "Offline";
-                        return;
-                    }
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(htmlText, 'text/html');
 
-                    // Estraiamo il testo pulito e filtriamo le informazioni chiave viste nella schermata mobile
-                    const linee = (doc.body.innerText || doc.body.textContent)
-                        .split('\n')
-                        .map(l => l.trim())
-                        .filter(l => l.length > 0);
-
-                    // Cerchiamo le righe più importanti (Stazioni, Orari, Binari, Stato)
-                    let htmlDettagli = "<div style='font-size:13px; display:flex; flex-direction:column; gap:6px;'>";
-
-                    let testoStato = "In orario / Monitorato";
-                    linee.forEach(l => {
-                        if (l.toLowerCase().includes("non e' ancora partito") || l.toLowerCase().includes("ritardo") || l.toLowerCase().includes("cancellato") || l.toLowerCase().includes("viaggia")) {
-                            testoStato = l;
-                        }
-                    });
-
-                    htmlDettagli += `<div style='font-weight:600; color:var(--accent); margin-bottom:2px;'>📌 Stato: ${testoStato}</div>`;
-
-                    // Creiamo una lista pulita con le informazioni principali estratte dalla pagina
-                    let righeRilevanti = linee.filter(l =>
-                        l.includes("ROMA") || l.includes("MINTURNO") ||
-                        l.includes("Partenza") || l.includes("Arrivo") ||
-                        l.includes("Binario")
-                    );
-
-                    righeRilevanti.forEach(r => {
-                        htmlDettagli += `<div style='color:var(--text); border-bottom:1px solid var(--border); padding-bottom:4px;'>${r}</div>`;
-                    });
-
-                    htmlDettagli += "</div>";
-                    document.getElementById('trenoContenuto').innerHTML = htmlDettagli;
-                    document.getElementById('trenoBadge').textContent = "Aggiornato";
+                const testoPagina = doc.body.textContent || "";
+                if (testoPagina.includes("Non trovato") || htmlText.length < 200) {
+                    document.getElementById('trenoContenuto').innerHTML = "<div class='no-lezioni'>Treno non attivo o non trovato.</div>";
+                    document.getElementById('trenoBadge').textContent = "Offline";
+                    return;
                 }
+
+                const linee = (doc.body.innerText || doc.body.textContent)
+                    .split('\n')
+                    .map(l => l.trim())
+                    .filter(l => l.length > 0);
+
+                let testoStato = "In orario / Monitorato";
+                linee.forEach(l => {
+                    const lower = l.toLowerCase();
+                    if (lower.includes("non e' ancora partito") || lower.includes("ritardo") || lower.includes("cancellato") || lower.includes("viaggia")) {
+                        testoStato = l;
+                    }
+                });
+
+                let htmlDettagli = "<div style='font-size:13px; display:flex; flex-direction:column; gap:6px;'>";
+                htmlDettagli += `<div style='font-weight:600; color:var(--accent); margin-bottom:2px;'>📌 Stato: ${testoStato}</div>`;
+
+                let righeRilevanti = linee.filter(l =>
+                    l.includes("ROMA") || l.includes("MINTURNO") ||
+                    l.includes("Partenza") || l.includes("Arrivo") ||
+                    l.includes("Binario")
+                );
+
+                righeRilevanti.forEach(r => {
+                    htmlDettagli += `<div style='color:var(--text); border-bottom:1px solid var(--border); padding-bottom:4px;'>${r}</div>`;
+                });
+
+                htmlDettagli += "</div>";
+                document.getElementById('trenoContenuto').innerHTML = htmlDettagli;
+                document.getElementById('trenoBadge').textContent = "Aggiornato";
+
             } catch (e) {
-                document.getElementById('trenoContenuto').innerHTML = "<div class='no-lezioni'>Errore di connessione al treno.</div>";
+                console.error("Errore treno:", e);
+                document.getElementById('trenoContenuto').innerHTML = "<div class='no-lezioni'>Impossibile caricare il treno (CORS/Rete).</div>";
                 document.getElementById('trenoBadge').textContent = "Errore";
             }
         }
