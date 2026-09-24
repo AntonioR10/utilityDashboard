@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang='it'>
+
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no'>
+    <title>Utility Dashboard</title>
+    <link rel='icon' href='https://gossipmap.altervista.org/sapLogo.png' type='image/png'>
+    <link href='https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap' rel='stylesheet'>
+    <style>
+        :root {
+            --radius: 16px;
+            --bg: #f4f6f9;
+            --card-bg: #ffffff;
+            --text: #1c1e21;
+            --muted: #65676b;
+            --accent: #1a73e8;
+            --accent-soft: #e8f0fe;
+            --border: #e4e6eb;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            --current-bg: #e6f4ea;
+            --current-border: #34a853;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #121212;
+                --card-bg: #1e1e1e;
+                --text: #e4e6eb;
+                --muted: #b0b3b8;
+                --accent: #8ab4f8;
+                --accent-soft: #20304a;
+                --border: #2f3033;
+                --shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+                --current-bg: #1b3322;
+                --current-border: #4caf50;
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 12px;
+            display: flex;
+            justify-content: center;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 550px;
+        }
+
+        header {
+            text-align: center;
+            margin: 10px 0 16px 0;
+        }
+
+        header h1 {
+            background: linear-gradient(135deg, var(--accent), #5b9bff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            font-size: 24px;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 16px;
+            margin-bottom: 12px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+        }
+
+        .card h2 {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text);
+            margin: 0 0 12px 0;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .info-item {
+            background: var(--bg);
+            padding: 10px 12px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .info-item .emoji {
+            font-size: 24px;
+            line-height: 1;
+            flex-shrink: 0;
+        }
+
+        .info-item div {
+            min-width: 0;
+        }
+
+        .info-item span {
+            display: block;
+            font-size: 10px;
+            color: var(--muted);
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 1px;
+        }
+
+        .info-item strong {
+            font-size: 13px;
+            color: var(--text);
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        li {
+            background: var(--bg);
+            margin-bottom: 10px;
+            padding: 12px;
+            border-radius: 12px;
+            border-left: 4px solid var(--accent);
+            position: relative;
+        }
+
+        li:last-child {
+            margin-bottom: 0;
+        }
+
+        li.corrente {
+            background: var(--current-bg);
+            border-left-color: var(--current-border);
+        }
+
+        .lezione-orario {
+            font-weight: 700;
+            color: var(--accent);
+            font-size: 12px;
+        }
+
+        li.corrente .lezione-orario {
+            color: var(--current-border);
+        }
+
+        .lezione-materia {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+            margin: 4px 0 6px;
+        }
+
+        .lezione-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+            gap: 8px;
+        }
+
+        .lezione-aula {
+            font-size: 12px;
+            color: var(--muted);
+            word-break: break-word;
+        }
+
+        .map-btn {
+            background: var(--accent-soft);
+            color: var(--accent);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+            flex-shrink: 0;
+        }
+
+        .map-btn:active {
+            opacity: 0.7;
+        }
+
+        li.corrente .map-btn {
+            background: var(--current-border);
+            color: #fff;
+        }
+
+        .badge {
+            background: var(--accent-soft);
+            color: var(--accent);
+            padding: 3px 8px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .badge.corrente {
+            background: var(--current-bg);
+            color: var(--current-border);
+        }
+
+        .no-lezioni {
+            text-align: center;
+            color: var(--muted);
+            padding: 16px;
+            font-size: 13px;
+            font-style: italic;
+        }
+
+        .full-width-btn {
+            width: 100%;
+            text-align: center;
+            padding: 12px;
+            margin-top: 6px;
+            font-size: 13px;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 100;
+            align-items: flex-end;
+            justify-content: center;
+            padding: 0;
+        }
+
+        .modal-overlay.aperto {
+            display: flex;
+        }
+
+        .modal-box {
+            background: var(--card-bg);
+            border-radius: 20px 20px 0 0;
+            box-shadow: 0 -4px 25px rgba(0, 0, 0, 0.15);
+            width: 100%;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+            }
+
+            to {
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .modal-close {
+            background: var(--bg);
+            border: none;
+            color: var(--text);
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            font-size: 15px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-tabs {
+            display: flex;
+            overflow-x: auto;
+            gap: 6px;
+            padding: 12px 16px 0 16px;
+            flex-shrink: 0;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .modal-tabs::-webkit-scrollbar {
+            display: none;
+        }
+
+        .modal-tab {
+            flex: 0 0 auto;
+            background: var(--bg);
+            color: var(--muted);
+            border: none;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            text-transform: capitalize;
+        }
+
+        .modal-tab.attivo {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .modal-body {
+            padding: 16px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class='container'>
+        <header>
+            <h1>Utility Dashboard</h1>
+        </header>
+
+        <!-- Box Informazioni Generali -->
+        <div class='card'>
+            <h2><span>Informazioni Generali</span><span class='badge'>Live</span></h2>
+            <div class='info-grid'>
+                <div class='info-item'><span class='emoji'>🕐</span>
+                    <div><span>Data e Ora</span><strong id='oraLive'>Caricamento...</strong></div>
+                </div>
+                <div class='info-item'><span class='emoji' id='meteoIcon'>🌤️</span>
+                    <div><span>Meteo (Roma)</span><strong id='meteoLive'>Aggiornamento...</strong></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Box Lezioni di Oggi -->
+        <div class='card'>
+            <h2><span>Lezioni di Oggi</span><span class='badge' id='badgeOggi'>...</span></h2>
+            <ul id='listaLezioniOggi'></ul>
+            <button class='map-btn full-width-btn' onclick='apriOrario()'>📅 Vedi orario completo</button>
+        </div>
+
+        <!-- Modale orario completo -->
+        <div class='modal-overlay' id='modaleOrario'>
+            <div class='modal-box'>
+                <div class='modal-header'>
+                    <h2>📅 Orario Completo</h2><button class='modal-close' onclick='chiudiOrario()'>✕</button>
+                </div>
+                <div class='modal-tabs' id='tabGiorni'></div>
+                <div class='modal-body' id='bodyOrario'></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Database delle lezioni
+        const orarioSettimanale = {
+            "lunedi": [
+                {"inizio": "10:00", "fine": "12:00", "materia": "Network Infrastructure", "aula": "Edificio D 201", "lat_gps": "41.9051", "lon_gps": "12.5170"},
+                {"inizio": "16:00", "fine": "19:00", "materia": "Distributed Systems", "aula": "Edificio CU035 15", "lat_gps": "41.9011", "lon_gps": "12.5134"}
+            ],
+            "martedi": [
+                {"inizio": "08:00", "fine": "10:00", "materia": "Cryptography", "aula": "Edificio C.Laurenziano 3L", "lat_gps": "41.9056", "lon_gps": "12.5176"}
+            ],
+            "mercoledi": [
+                {"inizio": "08:00", "fine": "10:00", "materia": "Security in Software Application", "aula": "Edificio C Aula Magna", "lat_gps": "41.9051", "lon_gps": "12.5170"},
+                {"inizio": "17:00", "fine": "19:00", "materia": "Distributed Systems", "aula": "Edificio C Aula Magna", "lat_gps": "41.9051", "lon_gps": "12.5170"}
+            ],
+            "giovedi": [
+                {"inizio": "14:00", "fine": "20:00", "materia": "Statistics", "aula": "Edificio CU007 Aula Inf XI", "lat_gps": "41.9049", "lon_gps": "12.5156"}
+            ],
+            "venerdi": [
+                {"inizio": "08:00", "fine": "11:00", "materia": "Network Infrastructure", "aula": "Edificio CU035 Aula C", "lat_gps": "41.9011", "lon_gps": "12.5134"},
+                {"inizio": "13:00", "fine": "16:00", "materia": "Security in Software Application", "aula": "Edificio G Aula G50", "lat_gps": "41.9051", "lon_gps": "12.5170"},
+                {"inizio": "16:00", "fine": "19:00", "materia": "Cryptography", "aula": "Edificio Scarpa 12 Aula 11", "lat_gps": "41.9062", "lon_gps": "12.5172"}
+            ],
+            "sabato": [],
+            "domenica": []
+        };
+
+        const ordineGiorni = ['lunedi', 'martedi', 'mercoledi', 'giovedi', 'venerdi', 'sabato', 'domenica'];
+        const mappingGiorniIt = ['domenica', 'lunedi', 'martedi', 'mercoledi', 'giovedi', 'venerdi', 'sabato'];
+
+        function minutiDaOrario(orario) {
+            const [h, m] = orario.split(':').map(Number);
+            return h * 60 + m;
+        }
+
+        function iconaMeteoDaCodice(c) {
+            if (c.startsWith("01")) return "☀️";
+            if (c.startsWith("02")) return "🌤️";
+            if (c.startsWith("03") || c.startsWith("04")) return "☁️";
+            if (c.startsWith("09")) return "🌧️";
+            if (c.startsWith("10")) return "🌦️";
+            if (c.startsWith("11")) return "⛈️";
+            if (c.startsWith("13")) return "❄️";
+            if (c.startsWith("50")) return "🌫️";
+            return "🌡️";
+        }
+
+        // Aggiornamento orario e lezioni in tempo reale basato sul browser dell'utente
+        function aggiornaDashboard() {
+            const now = new Date();
+
+            // Data e ora formattate
+            const ore = String(now.getHours()).padStart(2, '0');
+            const minuti = String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('oraLive').textContent = `${ore}:${minuti}`;
+
+            const giornoOggiStr = mappingGiorniIt[now.getDay()];
+            document.getElementById('badgeOggi').textContent = giornoOggiStr;
+
+            const minutiOra = now.getHours() * 60 + now.getMinutes();
+            const lezioniOggi = orarioSettimanale[giornoOggiStr] || [];
+            const listaContainer = document.getElementById('listaLezioniOggi');
+
+            if (lezioniOggi.length === 0) {
+                listaContainer.innerHTML = "<div class='no-lezioni'>Nessuna lezione oggi! Goditi il relax. 🎉</div>";
+            } else {
+                let htmlLezioni = '';
+                lezioniOggi.forEach(l => {
+                    const inCorso = (minutiOra >= minutiDaOrario(l.inizio)) && (minutiOra < minutiDaOrario(l.fine));
+                    const classeLi = inCorso ? "corrente" : "";
+
+                    htmlLezioni += `<li class='${classeLi}'>`;
+                    htmlLezioni += `<div class='lezione-orario'>🕒 ${l.inizio} - ${l.fine}${inCorso ? ' · in corso' : ''}</div>`;
+                    htmlLezioni += `<div class='lezione-materia'>${l.materia}</div>`;
+                    htmlLezioni += `<div class='lezione-footer'>`;
+                    htmlLezioni += `<div class='lezione-aula'>📍 ${l.aula}</div>`;
+                    htmlLezioni += `<a class='map-btn' href='https://www.google.com/maps/search/?api=1&query=${l.lat_gps},${l.lon_gps}&z=19' target='_blank'>🗺️ Maps</a>`;
+                    htmlLezioni += `</div></li>`;
+                });
+                listaContainer.innerHTML = htmlLezioni;
+            }
+        }
+
+        // Chiamata Meteo via JavaScript (OpenWeatherMap)
+        async function caricaMeteo() {
+            const apiKey = "af184ba542807457ff965dc2da9c3490";
+            const lat = "41.8947";
+            const lon = "12.4839";
+            const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&appid=${apiKey}&lang=it`;
+
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                if (response.ok) {
+                    const temp = data.main.temp.toFixed(1);
+                    const desc = data.weather[0].description;
+                    const icona = data.weather[0].icon;
+
+                    document.getElementById('meteoLive').textContent = `${temp}°C, ${desc}`;
+                    document.getElementById('meteoIcon').textContent = iconaMeteoDaCodice(icona);
+                }
+            } catch (e) {
+                document.getElementById('meteoLive').textContent = "Errore meteo";
+            }
+        }
+
+        // Gestione Modale Orario Completo
+        function apriOrario() {
+            const now = new Date();
+            const giornoOggiStr = mappingGiorniIt[now.getDay()];
+            const tabs = document.getElementById('tabGiorni');
+            tabs.innerHTML = '';
+
+            ordineGiorni.forEach(g => {
+                const b = document.createElement('button');
+                b.className = 'modal-tab' + (g === giornoOggiStr ? ' attivo' : '');
+                b.textContent = g;
+                b.dataset.giorno = g;
+                b.onclick = () => mostraGiorno(g);
+                tabs.appendChild(b);
+            });
+            mostraGiorno(giornoOggiStr);
+            document.getElementById('modaleOrario').classList.add('aperto');
+        }
+
+        function chiudiOrario() {
+            document.getElementById('modaleOrario').classList.remove('aperto');
+        }
+
+        function mostraGiorno(giorno) {
+            document.querySelectorAll('.modal-tab').forEach(t => t.classList.toggle('attivo', t.dataset.giorno === giorno));
+            const lezioni = orarioSettimanale[giorno] || [];
+            const body = document.getElementById('bodyOrario');
+
+            if (lezioni.length === 0) {
+                body.innerHTML = "<div class='no-lezioni'>Nessuna lezione. 🎉</div>";
+                return;
+            }
+
+            let out = '<ul>';
+            lezioni.forEach(l => {
+                out += `<li><div class='lezione-orario'>🕒 ${l.inizio} - ${l.fine}</div>`;
+                out += `<div class='lezione-materia'>${l.materia}</div>`;
+                out += `<div class='lezione-footer'><div class='lezione-aula'>📍 ${l.aula}</div>`;
+                out += `<a class='map-btn' href='https://www.google.com/maps/search/?api=1&query=${l.lat_gps},${l.lon_gps}&z=19' target='_blank'>🗺️ Maps</a></div></li>`;
+            });
+            out += '</ul>';
+            body.innerHTML = out;
+        }
+
+        document.getElementById('modaleOrario').addEventListener('click', function (e) {
+            if (e.target === this) chiudiOrario();
+        });
+
+        // Avvio script
+        aggiornaDashboard();
+        caricaMeteo();
+        setInterval(aggiornaDashboard, 30000); // Aggiorna i minuti/orario ogni 30 secondi
+    </script>
+
+</body>
+
+</html>
