@@ -11,7 +11,11 @@ export default async function handler(req, res) {
         return res.status(200).end();
     }
 
-    const { numeroTreno } = req.query || '12734';
+    const { numeroTreno } = req.query;
+
+    if (!numeroTreno) {
+        return res.status(400).json({ error: 'Specificare il numero del treno.' });
+    }
 
     try {
         const url = `http://www.viaggiatreno.it/vt_pax_internet/mobile/numero?numeroTreno=${numeroTreno}`;
@@ -21,17 +25,67 @@ export default async function handler(req, res) {
             }
         });
 
+        if (!response.ok) {
+            throw new Error('Impossibile contattare ViaggiaTreno');
+        }
+
         const html = await response.text();
 
-        // STAMPA NEI LOG DI VERCEL
-        console.log("HTML RICEVUTO DA VIAGGIATRENO:", html);
+        if (html.includes("non trovato") || html.includes("Errore")) {
+            return res.status(200).json({ attivo: false, compStatoTreno: "Treno non trovato" });
+        }
 
-        // RESTITUISCE L'HTML DIRETTAMENTE AL BROWSER (o puoi vederlo aprendo l'API da browser)
-        res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        return res.status(200).send(html);
+        const matchValore = (pattern) => {
+            const regex = new RegExp(pattern, 'i');
+            const match = html.match(regex);
+            return match ? match[1].replace(/<[^>]*>/g, '').trim() : null;
+        };
+
+        // Estrazione di tutti i blocchi <h2> all'interno di .corpocentrale
+        const h2Matches = [...html.matchAll(/<div class="corpocentrale">\s*<h2[^>]*>(.*?)<\/h2>/gi)].map(m => m[1].replace(/<[^>]*>/g, '').trim());
+
+        // Il primo è sempre l'origine, l'ultimo è sempre la destinazione finale
+        const stazionePartenzaTreno = h2Matches[0] || "Roma Termini";
+        const stazioneArrivoTreno = h2Matches.length > 1 ? h2Matches[h2Matches.length - 1] : "Minturno-Scauri";
+
+        // Se ci sono 3 blocchi corpocentrale, quello nel mezzo è l'ultima fermata effettuata
+        let ultimaFermataDescrizione = "In partenza";
+        if (h2Matches.length >= 3) {
+            ultimaFermataDescrizione = h2Matches[1];
+        }
+
+        // Orari e Binari
+        const partProg = matchValore('Partenza programmata\\s*:\\s*<br\\s*/?>\\s*<strong>\\s*([0-9:]+)');
+        const partEff = matchValore('Partenza effettiva\\s*:\\s*<br\\s*/?>\\s*<strong>([0-9:]+)');
+        const arrProg = matchValore('Arrivo Programmato.*?<strong>\\s*([0-9:]+)');
+        const arrEff = matchValore('Arrivo (?:effettivo|previsto):.*?<strong>\\s*([0-9:]+)');
+
+        const binPrevPart = matchValore('Binario\\s*Previsto\\s*:\\s*<br[^>]*>\\s*([0-9A-Za-z-]+)');
+        const binRealePart = matchValore('Binario\\s*Reale\\s*:\\s*<br[^>]*>\\s*<strong>([0-9A-Za-z-]+)</strong>');
+
+        // Stato del treno in fondo
+        const matchStato = html.match(/<div\s+class="evidenziato"><strong>([\s\S]*?)<\/strong>/i);
+        let statoTreno = matchStato ? matchStato[1].replace(/<[^>]*>/g, '').replace(/&#039;/g, "'").replace(/\s+/g, ' ').trim() : "In viaggio";
+
+        const oggiStringa = new Date().toISOString().split('T')[0];
+        const oraP = partEff || partProg || "00:00";
+        const oraA = arrEff || arrProg || "00:00";
+
+        return res.status(200).json({
+            attivo: true,
+            compStatoTreno: statoTreno,
+            orarioPartenza: oraP !== "--:--" ? `${oggiStringa}T${oraP}:00` : null,
+            orarioArrivo: oraA !== "--:--" ? `${oggiStringa}T${oraA}:00` : null,
+            binarioRealPartenzaDescrizione: binRealePart !== '-' ? binRealePart : (binPrevPart !== '-' ? binPrevPart : "-"),
+            binarioRealArrivoDescrizione: "-",
+            stazionePartenza: stazionePartenzaTreno,
+            stazioneArrivo: stazioneArrivoTreno,
+            // Passiamo l'ultima fermata al frontend
+            ultimaFermata: ultimaFermataDescrizione
+        });
 
     } catch (error) {
-        console.error('Errore:', error);
+        console.error('Errore durante il parsing:', error);
         return res.status(500).json({ error: error.message });
     }
 }

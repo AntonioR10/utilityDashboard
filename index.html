@@ -613,7 +613,7 @@
                 let part = treno.orarioPartenza ? new Date(treno.orarioPartenza).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "--:--";
                 let arr = treno.orarioArrivo ? new Date(treno.orarioArrivo).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "--:--";
                 let bin = treno.binarioRealPartenzaDescrizione || treno.binarioPrevistoPartenzaDescrizione || "-";
-                let posizione = treno.stazioneUltimoRilevamento || "Arrivato/Non Partito";
+                let posizione = treno.ultimaFermata || "Arrivato/Non Partito";
 
                 if (treno.provvedimento === 1) {
                     stato = "CANCELLATO";
