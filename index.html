@@ -595,59 +595,47 @@
             body.innerHTML = out;
         }
         async function caricaSingoloTreno(numeroTreno, prefisso) {
-            const targetUrl = `http://www.viaggiatreno.it/vt_pax_internet/mobile/numero?numeroTreno=${numeroTreno}`;
-            // Usiamo corsproxy.io che è molto più permissivo
-            const proxyUrl = `https://corsproxy.org/?` + encodeURIComponent(targetUrl);
+            // Usiamo l'API JSON ufficiale di ViaggiaTreno per cercare il treno
+            const urlCerca = `https://www.viaggiatreno.it/vt_pax_internet/rest/viaggiatreno/cercaNumeroTreno/${numeroTreno}`;
+            const proxyUrl = `https://api.allorigins.win/get?url=` + encodeURIComponent(urlCerca);
 
             try {
-                const response = await fetch(proxyUrl);
-                if (!response.ok) throw new Error();
+                const resCerca = await fetch(proxyUrl);
+                if (!resCerca.ok) throw new Error("Errore di rete");
 
-                const htmlText = await response.text();
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(htmlText, 'text/html');
+                const dataCerca = await resCerca.json();
+                const contenutoCerca = JSON.parse(dataCerca.contents);
 
-                if (doc.body.textContent.includes("Non trovato") || htmlText.length < 200) {
+                if (!contenutoCerca || contenutoCerca === -1 || (Array.isArray(contenutoCerca) && contenutoCerca.length === 0)) {
                     document.getElementById(`stato${prefisso}`).textContent = `🚆 ${prefisso} (${numeroTreno}): Non attivo`;
                     return;
                 }
 
-                const linee = doc.body.innerText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+                // Estrapoliamo l'ID corretto del treno e la stazione di origine
+                const trenoInfo = Array.isArray(contenutoCerca) ? contenutoCerca[0] : contenutoCerca;
+                const idTreno = trenoInfo.id || trenoInfo;
+                const idStazione = trenoInfo.idStazioneOrigine || '';
 
-                let stato = "In orario";
-                let part = "--:--";
-                let arr = "--:--";
-                let bin = "-";
-                let posizione = "In partenza";
+                // Chiamiamo l'andamento dettagliato in JSON
+                const urlDettaglio = `https://www.viaggiatreno.it/vt_pax_internet/rest/viaggiatreno/andamentoTreno/${idStazione}/${numeroTreno}/${idTreno}`;
+                const proxyDettaglio = `https://api.allorigins.win/get?url=` + encodeURIComponent(urlDettaglio);
 
-                for (let i = 0; i < linee.length; i++) {
-                    let l = linee[i];
+                const resDettaglio = await fetch(proxyDettaglio);
+                const dataDettaglio = await resDettaglio.json();
+                const treno = JSON.parse(dataDettaglio.contents);
 
-                    if (l.toLowerCase().includes("ritardo") || l.toLowerCase().includes("cancellato") || l.toLowerCase().includes("non e' ancora partito") || l.toLowerCase().includes("viaggia")) {
-                        stato = l;
-                    }
+                // Estraiamo i dati puliti dall'oggetto JSON di Trenitalia
+                let stato = treno.compStatoTreno ? treno.compStatoTreno.replace(/<[^>]*>?/gm, '') : (treno.itinerario ? "In viaggio" : "In orario");
+                let part = treno.orarioPartenza ? new Date(treno.orarioPartenza).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "--:--";
+                let arr = treno.orarioArrivo ? new Date(treno.orarioArrivo).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "--:--";
+                let bin = treno.binarioRealPartenzaDescrizione || treno.binarioPrevistoPartenzaDescrizione || "-";
+                let posizione = treno.stazioneUltimoRilevamento || "In partenza";
 
-                    if (l.includes("Ultimo rilevamento a")) {
-                        let partiRilevamento = l.replace("Ultimo rilevamento a", "").split("alle");
-                        posizione = partiRilevamento[0].trim();
-                    }
-
-                    if (l.includes("Partenza programmata")) {
-                        part = linee[i + 1] || part;
-                    }
-
-                    if (l.includes("Arrivo previsto") || l.includes("Arrivo Programmato")) {
-                        arr = linee[i + 1] || arr;
-                    }
-
-                    if (l.includes("Binario Reale") || l.includes("Binario Previsto")) {
-                        let val = linee[i + 1];
-                        if (val && val !== "--" && val.length < 3) {
-                            bin = val;
-                        }
-                    }
+                if (treno.provvedimento === 1) {
+                    stato = "CANCELLATO";
                 }
 
+                // Aggiorniamo la grafica della pagina
                 document.getElementById(`stato${prefisso}`).textContent = `🚆 ${prefisso} (${numeroTreno}): ${stato}`;
                 document.getElementById(`part${prefisso}`).textContent = part;
                 document.getElementById(`bin${prefisso}`).textContent = bin;
@@ -655,6 +643,7 @@
                 document.getElementById(`arr${prefisso}`).textContent = arr;
 
             } catch (err) {
+                console.error(err);
                 document.getElementById(`stato${prefisso}`).textContent = `🚆 ${prefisso} (${numeroTreno}): Errore dati`;
             }
         }
