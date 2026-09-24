@@ -554,7 +554,7 @@
 
             // Usiamo l'endpoint /raw per ricevere direttamente il testo HTML
             const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
-
+            console.log(proxyUrl);
             try {
                 const response = await fetch(proxyUrl);
                 if (!response.ok) throw new Error("Risposta del server non valida");
