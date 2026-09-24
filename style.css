@@ -368,3 +368,25 @@ li.corrente .map-btn {
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
 }
+
+.infomobility-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    border: 1px solid var(--border);
+    padding: 14px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    box-shadow: var(--shadow);
+    margin-bottom: 14px;
+    transition: opacity 0.2s;
+}
+
+.infomobility-btn:active {
+    opacity: 0.7;
+}
