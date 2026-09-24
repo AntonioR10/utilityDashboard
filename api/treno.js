@@ -83,8 +83,15 @@ export default async function handler(req, res) {
         const arrPrev = matchValoreInSezione(sezioneDestinazione, 'Arrivo previsto\\s*:<br\\s*/?>\\s*<strong>([0-9:]+)');
 
         // 4. Stato del treno
+        // Stato del treno in fondo
         const matchStato = html.match(/<div\s+class="evidenziato"><strong>([\s\S]*?)<\/strong>/i);
         let statoTreno = matchStato ? matchStato[1].replace(/<[^>]*>/g, '').replace(/&#039;/g, "'").replace(/\s+/g, ' ').trim() : "In viaggio";
+
+        // Rimuove la parte dell'ultimo rilevamento lasciando solo lo stato principale (es. ritardo)
+        const indexUltimo = statoTreno.indexOf("Ultimo rilevamento");
+        if (indexUltimo !== -1) {
+            statoTreno = statoTreno.substring(0, indexUltimo).trim();
+        }
 
         const oggiStringa = new Date().toISOString().split('T')[0];
         const oraP = partEff || partProg || "00:00";
