@@ -389,8 +389,8 @@
                     <div
                         style='display: flex; justify-content: space-between; align-items: center; font-size: 11px; text-align: center;'>
                         <div style='flex: 1; text-align: left;'>
-                            Part: <strong id='partAndata'>--:--</strong> <span style='color: var(--muted);'>(Bin. <span
-                                    id='binAndata'>-</span>)</span>
+                            Roma Termini: <strong id='partAndata'>--:--</strong> <span
+                                style='color: var(--muted);'>(Bin. <span id='binAndata'>-</span>)</span>
                         </div>
                         <span style='color: var(--muted);'>➔</span>
                         <div style='flex: 1; color: var(--accent); font-weight: 600;' id='posAndata'>
@@ -398,7 +398,7 @@
                         </div>
                         <span style='color: var(--muted);'>➔</span>
                         <div style='flex: 1; text-align: right;'>
-                            Arr: <strong id='arrAndata'>--:--</strong>
+                            Fondi-Sperlonga: <strong id='arrAndata'>--:--</strong>
                         </div>
                     </div>
                 </div>
@@ -413,8 +413,8 @@
                     <div
                         style='display: flex; justify-content: space-between; align-items: center; font-size: 11px; text-align: center;'>
                         <div style='flex: 1; text-align: left;'>
-                            Part: <strong id='partRitorno'>--:--</strong> <span style='color: var(--muted);'>(Bin. <span
-                                    id='binRitorno'>-</span>)</span>
+                            Roma Termini: <strong id='partRitorno'>--:--</strong> <span
+                                style='color: var(--muted);'>(Bin. <span id='binRitorno'>-</span>)</span>
                         </div>
                         <span style='color: var(--muted);'>➔</span>
                         <div style='flex: 1; color: var(--accent); font-weight: 600;' id='posRitorno'>
@@ -422,7 +422,7 @@
                         </div>
                         <span style='color: var(--muted);'>➔</span>
                         <div style='flex: 1; text-align: right;'>
-                            Arr: <strong id='arrRitorno'>--:--</strong>
+                            Fondi-Sperlonga: <strong id='arrRitorno'>--:--</strong>
                         </div>
                     </div>
                 </div>
@@ -613,7 +613,7 @@
                 let part = treno.orarioPartenza ? new Date(treno.orarioPartenza).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "--:--";
                 let arr = treno.orarioArrivo ? new Date(treno.orarioArrivo).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "--:--";
                 let bin = treno.binarioRealPartenzaDescrizione || treno.binarioPrevistoPartenzaDescrizione || "-";
-                let posizione = treno.stazioneUltimoRilevamento || "In partenza";
+                let posizione = treno.stazioneUltimoRilevamento || "Arrivato/Non Partito";
 
                 if (treno.provvedimento === 1) {
                     stato = "CANCELLATO";
@@ -650,7 +650,7 @@
                 trenoRitorno = "21091";
             } else if (oggi === 4) {
                 trenoAndata = "12736";
-                trenoRitorno = "12734";
+                trenoRitorno = "12737";
             } else if (oggi === 5) {
                 trenoAndata = "12726";
                 trenoRitorno = "21901";

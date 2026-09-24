@@ -67,6 +67,7 @@ export default async function handler(req, res) {
         return res.status(200).json({
             attivo: true,
             compStatoTreno: statoTreno,
+            stazioneUltimoRilevamento,
             orarioPartenza: oraP !== "--:--" ? `${oggiStringa}T${oraP}:00` : null,
             orarioArrivo: oraA !== "--:--" ? `${oggiStringa}T${oraA}:00` : null,
             binarioRealPartenzaDescrizione: binRealePart !== '-' ? binRealePart : (binPrevPart !== '-' ? binPrevPart : "-"),
