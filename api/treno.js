@@ -87,7 +87,7 @@ export default async function handler(req, res) {
             if (statoLower.includes("arrivato")) {
                 ultimaFermataDescrizione = "Arrivato";
             } else if (!partEff || statoLower.includes("non è ancora partito")) {
-                ultimaFermataDescrizione = "In partenza";
+                ultimaFermataDescrizione = "Non Ancora Partito";
             } else {
                 ultimaFermataDescrizione = "In viaggio";
             }
