@@ -15,18 +15,22 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Manca il parametro numeroTreno' });
     }
 
+    // Intestazioni per simulare una richiesta da browser ed evitare blocchi HTML
+    const headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'application/json, text/plain, */*'
+    };
+
     try {
         // 1. Cerca il treno
         const urlCerca = `https://www.viaggiatreno.it/vt_pax_internet/rest/viaggiatreno/cercaNumeroTreno/${numeroTreno}`;
-        const resCerca = await fetch(urlCerca);
-
-        if (!resCerca.ok) {
-            throw new Error("Errore nella richiesta a ViaggiaTreno (cerca)");
-        }
+        const resCerca = await fetch(urlCerca, { headers });
 
         const testoCerca = await resCerca.text();
-        if (!testoCerca || testoCerca.trim() === "" || testoCerca === "-1") {
-            return res.status(200).json({ attivo: false, messaggio: "Non attivo" });
+
+        // Controlla se ViaggiaTreno ha risposto con dell'HTML anziché JSON
+        if (!testoCerca || testoCerca.startsWith('<') || testoCerca === "-1") {
+            return res.status(200).json({ attivo: false, messaggio: "Non attivo o bloccato" });
         }
 
         const contenutoCerca = JSON.parse(testoCerca);
@@ -45,19 +49,15 @@ export default async function handler(req, res) {
 
         // 2. Prendi i dettagli del treno
         const urlDettaglio = `https://www.viaggiatreno.it/vt_pax_internet/rest/viaggiatreno/andamentoTreno/${idStazione}/${numeroTreno}/${idTreno}`;
-        const resDettaglio = await fetch(urlDettaglio);
+        const resDettaglio = await fetch(urlDettaglio, { headers });
+        const testoDettaglio = await resDettaglio.text();
 
-        if (!resDettaglio.ok) {
-            throw new Error("Errore nel recupero dettagli treno");
+        if (!testoDettaglio || testoDettaglio.startsWith('<')) {
+            throw new Error("Risposta non valida da ViaggiaTreno (dettaglio)");
         }
 
-        const treno = await resDettaglio.json();
+        const treno = JSON.parse(testoDettaglio);
 
-        if (!treno || !treno.codiceStazionePartenza) {
-            return res.status(200).json({ attivo: false, messaggio: "Non attivo" });
-        }
-
-        // Restituisce l'oggetto pulito
         return res.status(200).json({
             attivo: true,
             compStatoTreno: treno.compStatoTreno || "",
