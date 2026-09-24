@@ -35,60 +35,67 @@ export default async function handler(req, res) {
             return res.status(200).json({ attivo: false, compStatoTreno: "Treno non trovato" });
         }
 
-        const matchValore = (pattern) => {
-            const regex = new RegExp(pattern, 'i');
-            const match = html.match(regex);
+        // Funzione di utilità per estrarre il testo dentro un blocco specifico dell'HTML
+        const extractSection = (htmlString, startComment, endComment) => {
+            const startIndex = htmlString.indexOf(startComment);
+            if (startIndex === -1) return "";
+            const subStr = htmlString.substring(startIndex);
+            const endIndex = endComment ? subStr.indexOf(endComment) : subStr.length;
+            return endIndex !== -1 ? subStr.substring(0, endIndex) : subStr;
+        };
+
+        // Estraiamo le sezioni chiave delimitate dai commenti HTML originali
+        const sezioneOrigine = extractSection(html, "<!-- ORIGINE -->", "<!-- ULTIMA FERMATA -->");
+        const sezioneUltimaFermata = extractSection(html, "<!-- ULTIMA FERMATA -->", "<!-- LINK DETTAGLIO FERMATE -->");
+        const sezioneDestinazione = extractSection(html, "<!-- DESTINAZIONE -->", "<!-- SITUAZIONE -->");
+
+        // Helper per trovare l'h2 e i valori all'interno di una sezione
+        const getH2 = (section) => {
+            const match = section.match(/<h2>(.*?)<\/h2>/i);
             return match ? match[1].replace(/<[^>]*>/g, '').trim() : null;
         };
 
-        // Estrazione di tutti i blocchi <h2> all'interno di .corpocentrale
-        const h2Matches = [...html.matchAll(/<div class="corpocentrale">\s*<h2[^>]*>(.*?)<\/h2>/gi)]
-            .map(m => m[1].replace(/<[^>]*>/g, '').trim())
-            .filter(text => text.length > 0);
+        const matchValoreInSezione = (section, pattern) => {
+            const regex = new RegExp(pattern, 'i');
+            const match = section.match(regex);
+            return match ? match[1].replace(/<[^>]*>/g, '').trim() : null;
+        };
 
-        let stazionePartenzaTreno = "Roma Termini";
-        let stazioneArrivoTreno = "Minturno-Scauri";
+        // 1. Origine
+        const stazionePartenzaTreno = getH2(sezioneOrigine) || "ROMA TERMINI";
+        const partProg = matchValoreInSezione(sezioneOrigine, 'Partenza programmata\\s*:\\s*<br\\s*/?>\\s*<strong>\\s*([0-9:]+)');
+        const partEff = matchValoreInSezione(sezioneOrigine, 'Partenza effettiva\\s*:<br\\s*/?>\\s*<strong>([0-9:]+)');
+        const binRealePart = matchValoreInSezione(sezioneOrigine, 'Binario\\s*Reale\\s*:<br\\s*[^>]*>\\s*<strong>([0-9A-Za-z-]+)</strong>');
+        const binPrevPart = matchValoreInSezione(sezioneOrigine, 'Binario\\s*Previsto\\s*:<br\\s*[^>]*>\\s*([0-9A-Za-z-]+)');
+
+        // 2. Ultima Fermata (se presente nell'HTML)
         let ultimaFermataDescrizione = "In partenza";
-
-        if (h2Matches.length >= 2) {
-            stazionePartenzaTreno = h2Matches[0];
-            // La vera destinazione finale è quasi sempre l'ultima o la penultima, 
-            // ma ViaggiaTreno mobile mette l'arrivo finale come ultimo blocco o c'è un pattern fisso.
-            // Di solito se ci sono 3 elementi: [Partenza, Ultima Fermata, Arrivo] oppure [Partenza, Arrivo]
-            if (h2Matches.length === 3) {
-                ultimaFermataDescrizione = h2Matches[1];
-                stazioneArrivoTreno = h2Matches[2]; // L'arrivo effettivo resta l'ultimo
-            } else if (h2Matches.length > 3) {
-                ultimaFermataDescrizione = h2Matches[1];
-                stazioneArrivoTreno = h2Matches[h2Matches.length - 1];
-            } else {
-                stazioneArrivoTreno = h2Matches[1];
+        if (sezioneUltimaFermata.includes("corpocentrale")) {
+            const h2Fermata = getH2(sezioneUltimaFermata);
+            if (h2Fermata) {
+                ultimaFermataDescrizione = h2Fermata;
             }
         }
 
-        // Orari e Binari
-        const partProg = matchValore('Partenza programmata\\s*:\\s*<br\\s*/?>\\s*<strong>\\s*([0-9:]+)');
-        const partEff = matchValore('Partenza effettiva\\s*:\\s*<br\\s*/?>\\s*<strong>([0-9:]+)');
-        const arrProg = matchValore('Arrivo Programmato.*?<strong>\\s*([0-9:]+)');
-        const arrEff = matchValore('Arrivo (?:effettivo|previsto):.*?<strong>\\s*([0-9:]+)');
+        // 3. Destinazione Finale
+        const stazioneArrivoTreno = getH2(sezioneDestinazione) || "MINTURNO-SCAURI";
+        const arrProg = matchValoreInSezione(sezioneDestinazione, 'Arrivo Programmato\\s*:<br\\s*/?>\\s*<strong>\\s*([0-9:]+)');
+        const arrPrev = matchValoreInSezione(sezioneDestinazione, 'Arrivo previsto\\s*:<br\\s*/?>\\s*<strong>([0-9:]+)');
 
-        const binPrevPart = matchValore('Binario\\s*Previsto\\s*:\\s*<br[^>]*>\\s*([0-9A-Za-z-]+)');
-        const binRealePart = matchValore('Binario\\s*Reale\\s*:\\s*<br[^>]*>\\s*<strong>([0-9A-Za-z-]+)</strong>');
-
-        // Stato del treno in fondo
+        // 4. Stato del treno
         const matchStato = html.match(/<div\s+class="evidenziato"><strong>([\s\S]*?)<\/strong>/i);
         let statoTreno = matchStato ? matchStato[1].replace(/<[^>]*>/g, '').replace(/&#039;/g, "'").replace(/\s+/g, ' ').trim() : "In viaggio";
 
         const oggiStringa = new Date().toISOString().split('T')[0];
         const oraP = partEff || partProg || "00:00";
-        const oraA = arrEff || arrProg || "00:00";
+        const oraA = arrPrev || arrProg || "00:00";
 
         return res.status(200).json({
             attivo: true,
             compStatoTreno: statoTreno,
             orarioPartenza: oraP !== "--:--" ? `${oggiStringa}T${oraP}:00` : null,
             orarioArrivo: oraA !== "--:--" ? `${oggiStringa}T${oraA}:00` : null,
-            binarioRealPartenzaDescrizione: binRealePart !== '-' ? binRealePart : (binPrevPart !== '-' ? binPrevPart : "-"),
+            binarioRealPartenzaDescrizione: binRealePart !== '--' ? binRealePart : (binPrevPart || "-"),
             binarioRealArrivoDescrizione: "-",
             stazionePartenza: stazionePartenzaTreno,
             stazioneArrivo: stazioneArrivoTreno,
