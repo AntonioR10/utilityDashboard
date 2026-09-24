@@ -597,7 +597,7 @@
         async function caricaSingoloTreno(numeroTreno, prefisso) {
             const targetUrl = `http://www.viaggiatreno.it/vt_pax_internet/mobile/numero?numeroTreno=${numeroTreno}`;
             // Usiamo corsproxy.io che è molto più permissivo
-            const proxyUrl = `https://corsproxy.io/?` + encodeURIComponent(targetUrl);
+            const proxyUrl = `https://corsproxy.org/?` + encodeURIComponent(targetUrl);
 
             try {
                 const response = await fetch(proxyUrl);
