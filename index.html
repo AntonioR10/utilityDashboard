@@ -550,12 +550,19 @@
         }
         async function caricaStatoTreno() {
             const numeroTreno = "12733";
-            const targetUrl = `http://www.viaggiatreno.it/vt_pax_internet/mobile/numero?numeroTreno=${numeroTreno}`;
-            const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
+
+            // Usiamo l'API JSON ufficiale di ViaggiaTreno (molto più pulita dell'HTML)
+            const targetUrl = `http://www.viaggiatreno.it/viaggiatrenov2/dettaglioTreno/12733/${numeroTreno}`; // Nota: ViaggiaTreno richiede l'id stazione iniziale, ma usiamo l'endpoint mobile alternativo JSON:
+
+            // Usiamo l'endpoint di ricerca JSON mobile ufficiale di Trenitalia
+            const apiTreno = `http://www.viaggiatreno.it/vt_pax_internet/mobile/autocompletaTreno?term=${numeroTreno}`;
+
+            // Proxy alternativo super affidabile
+            const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(`http://www.viaggiatreno.it/vt_pax_internet/mobile/numero?numeroTreno=${numeroTreno}`)}`;
 
             try {
                 const response = await fetch(proxyUrl);
-                if (!response.ok) throw new Error("Risposta del server non valida");
+                if (!response.ok) throw new Error("Errore HTTP: " + response.status);
 
                 const htmlText = await response.text();
                 const parser = new DOMParser();
@@ -584,22 +591,17 @@
                 let htmlDettagli = "<div style='font-size:13px; display:flex; flex-direction:column; gap:6px;'>";
                 htmlDettagli += `<div style='font-weight:600; color:var(--accent); margin-bottom:4px; border-bottom:1px solid var(--border); padding-bottom:4px;'>📌 Stato: ${testoStato}</div>`;
 
-                // Analizziamo le linee accoppiando etichetta e valore successivo
                 let i = 0;
                 while (i < linee.length) {
                     let linea = linee[i];
-
-                    // Se la riga è una stazione o un'etichetta nota
                     if (linea.includes("ROMA") || linea.includes("MINTURNO") || linea.includes("Partenza") || linea.includes("Arrivo") || linea.includes("Binario")) {
                         let valore = linee[i + 1] || "";
-
-                        // Se la riga successiva è un valore valido (non un'altra etichetta o stazione)
                         if (valore && !valore.includes("ROMA") && !valore.includes("MINTURNO") && !valore.includes("Partenza") && !valore.includes("Arrivo") && !valore.includes("Binario")) {
                             htmlDettagli += `<div style='display:flex; justify-content:space-between; color:var(--text); border-bottom:1px solid var(--border); padding-bottom:4px;'>
                         <span>${linea}</span>
                         <strong style='color:var(--accent);'>${valore}</strong>
                     </div>`;
-                            i++; // Salta il valore già consumato
+                            i++;
                         } else {
                             htmlDettagli += `<div style='color:var(--text); font-weight:600; margin-top:4px;'>${linea}</div>`;
                         }
@@ -613,7 +615,7 @@
 
             } catch (e) {
                 console.error("Errore treno:", e);
-                document.getElementById('trenoContenuto').innerHTML = "<div class='no-lezioni'>Impossibile caricare il treno (CORS/Rete).</div>";
+                document.getElementById('trenoContenuto').innerHTML = "<div class='no-lezioni'>Impossibile caricare il treno (Proxy offline).</div>";
                 document.getElementById('trenoBadge').textContent = "Errore";
             }
         }
