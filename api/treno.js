@@ -35,18 +35,15 @@ export default async function handler(req, res) {
             return res.status(200).json({ attivo: false, compStatoTreno: "Treno non trovato" });
         }
 
-        // Funzione di utilità per catturare il testo pulito dentro i tag del blocco HTML
         const matchValore = (pattern) => {
             const regex = new RegExp(pattern, 'i');
             const match = html.match(regex);
-            return match ? match[1].replace(/<[^>]*>/g, '').trim() : '-';
+            return match ? match[1].replace(/<[^>]*>/g, '').trim() : null;
         };
 
-        // Estrazione mirata basata sul codice HTML reale ricevuto
         const partProg = matchValore('Partenza programmata\\s*:\\s*<br\\s*/?>\\s*<strong>\\s*([0-9:]+)');
         const partEff = matchValore('Partenza effettiva\\s*:\\s*<br\\s*/?>\\s*<strong>([0-9:]+)');
 
-        // Binari
         const binPrevPart = matchValore('Binario\\s*Previsto\\s*:\\s*<br[^>]*>\\s*([0-9A-Za-z-]+)');
         const binRealePart = matchValore('Binario\\s*Reale\\s*:\\s*<br[^>]*>\\s*<strong>([0-9A-Za-z-]+)</strong>');
 
@@ -56,19 +53,23 @@ export default async function handler(req, res) {
         const binPrevArr = matchValore('DESTINAZIONE.*?Binario\\s*Previsto\\s*:\\s*<br[^>]*>\\s*([0-9A-Za-z-]+)');
         const binRealeArr = matchValore('DESTINAZIONE.*?Binario\\s*Reale\\s*:\\s*<br[^>]*>\\s*<strong>([0-9A-Za-z-]+)</strong>');
 
-        // Estrazione dello stato del treno dal blocco evidenziato in fondo
         const matchStato = html.match(/<div\s+class="evidenziato"><strong>([\s\S]*?)<\/strong>/i);
         let statoTreno = matchStato ? matchStato[1].replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim() : "In viaggio";
+
+        // Otteniamo la data odierna in formato YYYY-MM-DD per renderla compatibile con new Date() nel frontend
+        const oggiStringa = new Date().toISOString().split('T')[0];
+
+        const oraP = partEff || partProg || "00:00";
+        const oraA = arrEff || arrProg || "00:00";
 
         return res.status(200).json({
             attivo: true,
             compStatoTreno: statoTreno,
-            orarioPartenza: partEff !== '-' ? partEff : (partProg !== '-' ? partProg : "--:--"),
-            orarioArrivo: arrEff !== '-' ? arrEff : (arrProg !== '-' ? arrProg : "--:--"),
+            // Passiamo una stringa di data completa (es. "2026-06-06T10:38:00") per evitare l'errore "Invalid Date"
+            orarioPartenza: oraP !== "--:--" ? `${oggiStringa}T${oraP}:00` : null,
+            orarioArrivo: oraA !== "--:--" ? `${oggiStringa}T${oraA}:00` : null,
             binarioRealPartenzaDescrizione: binRealePart !== '-' ? binRealePart : (binPrevPart !== '-' ? binPrevPart : "-"),
-            binarioRealArrivoDescrizione: binRealeArr !== '-' ? binRealeArr : (binPrevArr !== '-' ? binPrevArr : "-"),
-            stazionePartenza: "Minturno-Scauri",
-            stazioneArrivo: "Roma Termini"
+            binarioRealArrivoDescrizione: binRealeArr !== '-' ? binRealeArr : (binPrevArr !== '-' ? binPrevArr : "-")
         });
 
     } catch (error) {
