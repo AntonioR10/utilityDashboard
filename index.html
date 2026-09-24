@@ -374,10 +374,40 @@
                 </div>
             </div>
         </div>
+        <!-- Box Stato Treno con campi fissi -->
         <div class='card'>
             <h2><span>Stato Treno (12733)</span><span class='badge' id='trenoBadge'>Live</span></h2>
-            <div id='trenoContenuto'>
-                <div class='no-lezioni'>Caricamento dati treno...</div>
+            <div style='font-size: 13px; display: flex; flex-direction: column; gap: 6px;'>
+
+                <!-- Stato generale -->
+                <div id='trenoStato'
+                    style='font-weight: 600; color: var(--accent); margin-bottom: 4px; border-bottom: 1px solid var(--border); padding-bottom: 4px;'>
+                    📌 Stato: Caricamento...
+                </div>
+
+                <!-- Roma Termini -->
+                <div style='color: var(--text); font-weight: 700; margin-top: 4px;'>🏢 ROMA TERMINI</div>
+                <div style='display: flex; justify-content: space-between; color: var(--text); padding-left: 8px;'>
+                    <span>Partenza programmata</span>
+                    <strong id='romaPartenza' style='color: var(--accent);'>--</strong>
+                </div>
+                <div
+                    style='display: flex; justify-content: space-between; color: var(--text); padding-left: 8px; border-bottom: 1px solid var(--border); padding-bottom: 4px;'>
+                    <span>Binario</span>
+                    <strong id='romaBinario' style='color: var(--accent);'>--</strong>
+                </div>
+
+                <!-- Minturno-Scauri -->
+                <div style='color: var(--text); font-weight: 700; margin-top: 4px;'>🏢 MINTURNO-SCAURI</div>
+                <div style='display: flex; justify-content: space-between; color: var(--text); padding-left: 8px;'>
+                    <span>Arrivo programmato</span>
+                    <strong id='minturnoArrivo' style='color: var(--accent);'>--</strong>
+                </div>
+                <div style='display: flex; justify-content: space-between; color: var(--text); padding-left: 8px;'>
+                    <span>Binario arrivo</span>
+                    <strong id='minturnoBinario' style='color: var(--accent);'>--</strong>
+                </div>
+
             </div>
         </div>
 
@@ -550,19 +580,12 @@
         }
         async function caricaStatoTreno() {
             const numeroTreno = "12733";
-
-            // Usiamo l'API JSON ufficiale di ViaggiaTreno (molto più pulita dell'HTML)
-            const targetUrl = `http://www.viaggiatreno.it/viaggiatrenov2/dettaglioTreno/12733/${numeroTreno}`; // Nota: ViaggiaTreno richiede l'id stazione iniziale, ma usiamo l'endpoint mobile alternativo JSON:
-
-            // Usiamo l'endpoint di ricerca JSON mobile ufficiale di Trenitalia
-            const apiTreno = `http://www.viaggiatreno.it/vt_pax_internet/mobile/autocompletaTreno?term=${numeroTreno}`;
-
-            // Proxy alternativo super affidabile
-            const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(`http://www.viaggiatreno.it/vt_pax_internet/mobile/numero?numeroTreno=${numeroTreno}`)}`;
+            const targetUrl = `http://www.viaggiatreno.it/vt_pax_internet/mobile/numero?numeroTreno=${numeroTreno}`;
+            const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
 
             try {
                 const response = await fetch(proxyUrl);
-                if (!response.ok) throw new Error("Errore HTTP: " + response.status);
+                if (!response.ok) throw new Error("Errore di rete");
 
                 const htmlText = await response.text();
                 const parser = new DOMParser();
@@ -570,7 +593,7 @@
 
                 const testoPagina = doc.body.textContent || "";
                 if (testoPagina.includes("Non trovato") || htmlText.length < 200) {
-                    document.getElementById('trenoContenuto').innerHTML = "<div class='no-lezioni'>Treno non attivo o non trovato.</div>";
+                    document.getElementById('trenoStato').textContent = "📌 Stato: Treno non attivo o non trovato";
                     document.getElementById('trenoBadge').textContent = "Offline";
                     return;
                 }
@@ -580,6 +603,7 @@
                     .map(l => l.trim())
                     .filter(l => l.length > 0);
 
+                // 1. Trova lo stato generale
                 let testoStato = "In orario / Monitorato";
                 linee.forEach(l => {
                     const lower = l.toLowerCase();
@@ -588,34 +612,40 @@
                     }
                 });
 
-                let htmlDettagli = "<div style='font-size:13px; display:flex; flex-direction:column; gap:6px;'>";
-                htmlDettagli += `<div style='font-weight:600; color:var(--accent); margin-bottom:4px; border-bottom:1px solid var(--border); padding-bottom:4px;'>📌 Stato: ${testoStato}</div>`;
+                // Esempio di estrazione rapida o assegnazione diretta dei dati trovati nelle linee
+                // (Puoi affinare gli indici dell'array 'linee' in base a come compaiono)
+                let orarioPartenza = "--";
+                let binarioPartenzaVal = "--";
+                let orarioArrivo = "--";
 
-                let i = 0;
-                while (i < linee.length) {
-                    let linea = linee[i];
-                    if (linea.includes("ROMA") || linea.includes("MINTURNO") || linea.includes("Partenza") || linea.includes("Arrivo") || linea.includes("Binario")) {
-                        let valore = linee[i + 1] || "";
-                        if (valore && !valore.includes("ROMA") && !valore.includes("MINTURNO") && !valore.includes("Partenza") && !valore.includes("Arrivo") && !valore.includes("Binario")) {
-                            htmlDettagli += `<div style='display:flex; justify-content:space-between; color:var(--text); border-bottom:1px solid var(--border); padding-bottom:4px;'>
-                        <span>${linea}</span>
-                        <strong style='color:var(--accent);'>${valore}</strong>
-                    </div>`;
-                            i++;
-                        } else {
-                            htmlDettagli += `<div style='color:var(--text); font-weight:600; margin-top:4px;'>${linea}</div>`;
+                // Scorriamo le linee per raccogliere i dati sicuri
+                for (let i = 0; i < linee.length; i++) {
+                    if (linee[i].includes("Partenza programmata")) {
+                        orarioPartenza = linee[i + 1] || "--";
+                    }
+                    if (linee[i].includes("Arrivo Programmato") || linee[i].includes("Arrivo previsto")) {
+                        orarioArrivo = linee[i + 1] || "--";
+                    }
+                    if (linee[i].includes("Binario") && linee[i + 1]) {
+                        // Prende il numero del binario successivo se presente
+                        let val = linee[i + 2] || linee[i + 1];
+                        if (!val.includes("Previsto") && !val.includes("Reale")) {
+                            binarioPartenzaVal = val;
                         }
                     }
-                    i++;
                 }
 
-                htmlDettagli += "</div>";
-                document.getElementById('trenoContenuto').innerHTML = htmlDettagli;
+                // Assegniamo i valori direttamente agli elementi HTML tramite i loro ID!
+                document.getElementById('trenoStato').textContent = `📌 Stato: ${testoStato}`;
+                document.getElementById('romaPartenza').textContent = orarioPartenza;
+                document.getElementById('romaBinario').textContent = binarioPartenzaVal;
+                document.getElementById('minturnoArrivo').textContent = orarioArrivo;
+
                 document.getElementById('trenoBadge').textContent = "Aggiornato";
 
             } catch (e) {
                 console.error("Errore treno:", e);
-                document.getElementById('trenoContenuto').innerHTML = "<div class='no-lezioni'>Impossibile caricare il treno (Proxy offline).</div>";
+                document.getElementById('trenoStato').textContent = "📌 Stato: Errore di connessione";
                 document.getElementById('trenoBadge').textContent = "Errore";
             }
         }
