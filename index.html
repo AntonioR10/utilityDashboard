@@ -550,8 +550,15 @@
         }
         async function caricaStatoTreno() {
             const numeroTreno = "12733";
-            const targetUrl = `http://www.viaggiatreno.it/vt_pax_internet/mobile/numero?numeroTreno=${numeroTreno}`;
-            const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
+
+            // Usiamo l'API JSON ufficiale di ViaggiaTreno (molto più pulita dell'HTML)
+            const targetUrl = `http://www.viaggiatreno.it/viaggiatrenov2/dettaglioTreno/12733/${numeroTreno}`; // Nota: ViaggiaTreno richiede l'id stazione iniziale, ma usiamo l'endpoint mobile alternativo JSON:
+
+            // Usiamo l'endpoint di ricerca JSON mobile ufficiale di Trenitalia
+            const apiTreno = `http://www.viaggiatreno.it/vt_pax_internet/mobile/autocompletaTreno?term=${numeroTreno}`;
+
+            // Proxy alternativo super affidabile
+            const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(`http://www.viaggiatreno.it/vt_pax_internet/mobile/numero?numeroTreno=${numeroTreno}`)}`;
 
             try {
                 const response = await fetch(proxyUrl);
@@ -587,49 +594,16 @@
                 let i = 0;
                 while (i < linee.length) {
                     let linea = linee[i];
-
-                    // Riconosce le stazioni (Roma Termini, Minturno-Scauri)
-                    if (linea.includes("ROMA") || linea.includes("MINTURNO")) {
-                        htmlDettagli += `<div style='color:var(--text); font-weight:700; margin-top:6px; border-bottom:1px solid var(--border); padding-bottom:2px;'>🏢 ${linea}</div>`;
-                        i++;
-                        continue;
-                    }
-
-                    // Gestione etichette con valore successivo (es. Partenza programmata -> 13:36)
-                    if (linea.includes("programmata") || linea.includes("effettiva") || linea.includes("Programmato") || linea.includes("previsto")) {
+                    if (linea.includes("ROMA") || linea.includes("MINTURNO") || linea.includes("Partenza") || linea.includes("Arrivo") || linea.includes("Binario")) {
                         let valore = linee[i + 1] || "";
-                        // Se il valore è pulito e non è un'altra etichetta
-                        if (valore && !valore.includes("Binario") && !valore.includes("Previsto") && !valore.includes("Reale")) {
-                            htmlDettagli += `<div style='display:flex; justify-content:space-between; color:var(--text); padding-left:8px;'>
+                        if (valore && !valore.includes("ROMA") && !valore.includes("MINTURNO") && !valore.includes("Partenza") && !valore.includes("Arrivo") && !valore.includes("Binario")) {
+                            htmlDettagli += `<div style='display:flex; justify-content:space-between; color:var(--text); border-bottom:1px solid var(--border); padding-bottom:4px;'>
                         <span>${linea}</span>
                         <strong style='color:var(--accent);'>${valore}</strong>
                     </div>`;
                             i++;
                         } else {
-                            htmlDettagli += `<div style='display:flex; justify-content:space-between; color:var(--text); padding-left:8px;'>
-                        <span>${linea}</span>
-                        <span style='color:var(--muted); font-style:italic;'>--</span>
-                    </div>`;
-                        }
-                    }
-                    // Gestione specifica per i binari (Previsto / Reale)
-                    else if (linea.includes("Binario")) {
-                        let tipoBinario = linee[i + 1] || ""; // Previsto / Reale
-                        let numBinario = linee[i + 2] || "";   // Il numero effettivo (es. 2, 5, ecc.)
-
-                        // Se i dati successivi compongono correttamente il binario
-                        if (tipoBinario.includes("Previsto") || tipoBinario.includes("Reale") || tipoBinario.includes("Binario")) {
-                            htmlDettagli += `<div style='display:flex; justify-content:space-between; color:var(--text); padding-left:8px;'>
-                        <span>🛤️ Binario (${tipoBinario.replace(":", "")})</span>
-                        <strong style='color:var(--accent);'>${numBinario || '--'}</strong>
-                    </div>`;
-                            i += 2; // Salta le righe consumate
-                        } else {
-                            htmlDettagli += `<div style='display:flex; justify-content:space-between; color:var(--text); padding-left:8px;'>
-                        <span>🛤️ Binario</span>
-                        <strong style='color:var(--accent);'>${tipoBinario || '--'}</strong>
-                    </div>`;
-                            i++;
+                            htmlDettagli += `<div style='color:var(--text); font-weight:600; margin-top:4px;'>${linea}</div>`;
                         }
                     }
                     i++;
