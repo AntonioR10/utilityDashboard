@@ -1,5 +1,4 @@
 export default async function handler(req, res) {
-    // Gestione CORS
     res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
@@ -18,56 +17,54 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Specificare il numero del treno.' });
     }
 
-    const headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-        'Accept': 'application/json, text/javascript, */*; q=0.01',
-        'Referer': 'https://www.viaggiatreno.it/'
-    };
-
     try {
-        const cercaRes = await fetch(`https://www.viaggiatreno.it/viaggiatrenonew/resteval/cercaNumeroTreno/${numeroTreno}`, { headers });
+        // Chiamata alla versione mobile che funziona sempre
+        const url = `http://www.viaggiatreno.it/vt_pax_internet/mobile/numero?numeroTreno=${numeroTreno}`;
+        const response = await fetch(url, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+            }
+        });
 
-        if (!cercaRes.ok) {
-            throw new Error(`Errore di rete ViaggiaTreno (Stato: ${cercaRes.status})`);
+        if (!response.ok) {
+            throw new Error('Impossibile contattare ViaggiaTreno mobile');
         }
 
-        const textData = await cercaRes.text();
+        const html = await response.text();
 
-        // Controlliamo se ViaggiaTreno ha risposto con dell'HTML anziché JSON (es. blocco o manutenzione)
-        if (textData.trim().startsWith('<!DOCTYPE') || textData.trim().startsWith('<html')) {
-            console.error('Risposta HTML ricevuta da ViaggiaTreno:', textData.substring(0, 150));
-            return res.status(502).json({
-                error: 'Il servizio ViaggiaTreno ha bloccato la richiesta o restituito una pagina di errore.',
-                raw: textData.substring(0, 100)
-            });
+        // Funzione di supporto per estrarre i dati testuali dall'HTML tramite regex
+        const extract = (regex) => {
+            const match = html.match(regex);
+            return match ? match[1].trim() : '-';
+        };
+
+        // Estrazione dei dati principali visibili nella pagina
+        const datiTreno = {
+            numero: numeroTreno,
+            origine: extract(/Partenza programmata\s*:\s*<\/strong><br\s*\/?>\s*([^<]+)/i) || extract(/Partenza programmata\s*:\s*([0-9:]+)/i),
+            // Puliamo e strutturiamo i campi chiave
+            partenzaProgrammata: extract(/Partenza programmata\s*:\s*<\/span>([0-9:]+)/i),
+            partenzaEffettiva: extract(/Partenza effettiva\s*:\s*<\/span>([0-9:]+)/i),
+            binarioPrevistoPartenza: extract(/Binario Previsto\s*:\s*<\/span>([0-9-]+)/i),
+            binarioRealePartenza: extract(/Binario Reale\s*:\s*<\/span>([0-9-]+)/i),
+
+            arrivoProgrammato: extract(/Arrivo Programmato\s*:\s*<\/span>([0-9:]+)/i),
+            arrivoEffettivo: extract(/Arrivo effettivo\s*:\s*<\/span>([0-9:]+)/i),
+            binarioPrevistoArrivo: extract(/Binario Previsto\s*:\s*<\/span>([0-9-]+)/i) ?? extract(/Arrivo.*?Binario Previsto\s*:\s*([0-9-]+)/s),
+            binarioRealeArrivo: extract(/Binario Reale\s*:\s*<\/span>([0-9-]+)/i),
+
+            messaggioRitardo: extract(/(Il treno e' arrivato con[^<]+|Il treno risulta[^<]+|In orario[^<]*)/i)
+        };
+
+        // Se la pagina contiene un errore classico di treno inesistente
+        if (html.includes("non trovato") || html.includes("Errore")) {
+            return res.status(404).json({ error: 'Treno non trovato o non disponibile.' });
         }
 
-        const cercaData = JSON.parse(textData);
-        const trenoInfo = Array.isArray(cercaData) ? cercaData[0] : cercaData;
-
-        if (!trenoInfo || !trenoInfo.codLocOrig || !trenoInfo.id) {
-            return res.status(404).json({ error: 'Treno non trovato o dati incompleti per questo numero.' });
-        }
-
-        const idStazioneOrigine = trenoInfo.codLocOrig;
-        const idTreno = trenoInfo.id;
-
-        const andamentoRes = await fetch(`https://www.viaggiatreno.it/viaggiatrenonew/resteval/andamentoTreno/${idStazioneOrigine}/${idTreno}`, { headers });
-
-        if (!andamentoRes.ok) {
-            throw new Error("Errore nel recupero dell'andamento del treno");
-        }
-
-        const andamentoText = await andamentoRes.text();
-        if (andamentoText.trim().startsWith('<!DOCTYPE') || andamentoText.trim().startsWith('<html')) {
-            return res.status(502).json({ error: "L'andamento del treno ha restituito una pagina HTML non valida." });
-        }
-
-        const andamentoData = JSON.parse(andamentoText);
-        return res.status(200).json(andamentoData);
+        return res.status(200).json(html); // Per ora puoi anche restituire l'html o testare l'estrazione
 
     } catch (error) {
-        console.error('Errore API Treno:', error);
-        return res.status(500).json({ error: error.message || 'Errore interno del server.' });
+        console.error('Errore:', error);
+        return res.status(500).json({ error: 'Errore interno del server.' });
     }
 }
