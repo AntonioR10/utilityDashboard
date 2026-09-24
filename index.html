@@ -548,20 +548,9 @@
             out += '</ul>';
             body.innerHTML = out;
         }
-
-        document.getElementById('modaleOrario').addEventListener('click', function (e) {
-            if (e.target === this) chiudiOrario();
-        });
-
-        // Avvio script
-        aggiornaDashboard();
-        caricaMeteo();
-        setInterval(aggiornaDashboard, 30000);
         async function caricaStatoTreno() {
             const numeroTreno = "12733";
-            e
             const targetUrl = `http://www.viaggiatreno.it/vt_pax_internet/mobile/numero?numeroTreno=${numeroTreno}`;
-
             const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
 
             try {
@@ -573,21 +562,60 @@
                     const doc = parser.parseFromString(data.contents, 'text/html');
 
                     const testoPagina = doc.body.textContent || "";
-
                     if (testoPagina.includes("Non trovato") || testoPagina.length < 200) {
-                        console.warn("Treno non trovato o non attivo");
-                        document.getElementById('statoTrenoBox').textContent = "Treno non attivo";
+                        document.getElementById('trenoContenuto').innerHTML = "<div class='no-lezioni'>Treno non attivo o non trovato.</div>";
+                        document.getElementById('trenoBadge').textContent = "Offline";
                         return;
                     }
 
-                    console.Html = testoPagina;
-                    document.getElementById('statoTrenoBox').textContent = "Treno trovato e sincronizzato!";
+                    // Estraiamo il testo pulito e filtriamo le informazioni chiave viste nella schermata mobile
+                    const linee = (doc.body.innerText || doc.body.textContent)
+                        .split('\n')
+                        .map(l => l.trim())
+                        .filter(l => l.length > 0);
+
+                    // Cerchiamo le righe più importanti (Stazioni, Orari, Binari, Stato)
+                    let htmlDettagli = "<div style='font-size:13px; display:flex; flex-direction:column; gap:6px;'>";
+
+                    let testoStato = "In orario / Monitorato";
+                    linee.forEach(l => {
+                        if (l.toLowerCase().includes("non e' ancora partito") || l.toLowerCase().includes("ritardo") || l.toLowerCase().includes("cancellato") || l.toLowerCase().includes("viaggia")) {
+                            testoStato = l;
+                        }
+                    });
+
+                    htmlDettagli += `<div style='font-weight:600; color:var(--accent); margin-bottom:2px;'>📌 Stato: ${testoStato}</div>`;
+
+                    // Creiamo una lista pulita con le informazioni principali estratte dalla pagina
+                    let righeRilevanti = linee.filter(l =>
+                        l.includes("ROMA") || l.includes("MINTURNO") ||
+                        l.includes("Partenza") || l.includes("Arrivo") ||
+                        l.includes("Binario")
+                    );
+
+                    righeRilevanti.forEach(r => {
+                        htmlDettagli += `<div style='color:var(--text); border-bottom:1px solid var(--border); padding-bottom:4px;'>${r}</div>`;
+                    });
+
+                    htmlDettagli += "</div>";
+                    document.getElementById('trenoContenuto').innerHTML = htmlDettagli;
+                    document.getElementById('trenoBadge').textContent = "Aggiornato";
                 }
             } catch (e) {
-                console.error("Errore di connessione a ViaggiaTreno:", e);
-                document.getElementById('statoTrenoBox').textContent = "Errore caricamento treno";
+                document.getElementById('trenoContenuto').innerHTML = "<div class='no-lezioni'>Errore di connessione al treno.</div>";
+                document.getElementById('trenoBadge').textContent = "Errore";
             }
         }
+
+        document.getElementById('modaleOrario').addEventListener('click', function (e) {
+            if (e.target === this) chiudiOrario();
+        });
+
+        // Avvio script
+        aggiornaDashboard();
+        caricaMeteo();
+        setInterval(aggiornaDashboard, 30000);
+
     </script>
 
 </body>
