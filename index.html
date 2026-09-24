@@ -596,7 +596,9 @@
         }
         async function caricaSingoloTreno(numeroTreno, prefisso) {
             const targetUrl = `http://www.viaggiatreno.it/vt_pax_internet/mobile/numero?numeroTreno=${numeroTreno}`;
-            const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
+            // Usiamo corsproxy.io che è molto più permissivo
+            const proxyUrl = `https://corsproxy.io/?` + encodeURIComponent(targetUrl);
+
             try {
                 const response = await fetch(proxyUrl);
                 if (!response.ok) throw new Error();
@@ -652,7 +654,7 @@
                 document.getElementById(`pos${prefisso}`).textContent = posizione;
                 document.getElementById(`arr${prefisso}`).textContent = arr;
 
-            } catch (e) {
+            } catch (err) {
                 document.getElementById(`stato${prefisso}`).textContent = `🚆 ${prefisso} (${numeroTreno}): Errore dati`;
             }
         }
