@@ -8,7 +8,6 @@ export default async function handler(req, res) {
         'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
     );
 
-    // Se è una richiesta preflight OPTIONS, interrompiamo qui
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
     }
@@ -19,14 +18,13 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Specificare il numero del treno.' });
     }
 
-    // Header per simulare una richiesta da browser ed evitare blocchi
     const headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'application/json, text/javascript, */*; q=0.01'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        'Accept': 'application/json, text/javascript, */*; q=0.01',
+        'Referer': 'https://www.viaggiatreno.it/'
     };
 
     try {
-        // 1. Ricerca del treno (usando HTTPS)
         const cercaRes = await fetch(`https://www.viaggiatreno.it/viaggiatrenonew/resteval/cercaNumeroTreno/${numeroTreno}`, { headers });
 
         if (!cercaRes.ok) {
@@ -34,29 +32,38 @@ export default async function handler(req, res) {
         }
 
         const textData = await cercaRes.text();
-        if (!textData) {
-            return res.status(404).json({ error: 'Nessuna risposta ricevuta da ViaggiaTreno.' });
+
+        // Controlliamo se ViaggiaTreno ha risposto con dell'HTML anziché JSON (es. blocco o manutenzione)
+        if (textData.trim().startsWith('<!DOCTYPE') || textData.trim().startsWith('<html')) {
+            console.error('Risposta HTML ricevuta da ViaggiaTreno:', textData.substring(0, 150));
+            return res.status(502).json({
+                error: 'Il servizio ViaggiaTreno ha bloccato la richiesta o restituito una pagina di errore.',
+                raw: textData.substring(0, 100)
+            });
         }
 
         const cercaData = JSON.parse(textData);
         const trenoInfo = Array.isArray(cercaData) ? cercaData[0] : cercaData;
 
         if (!trenoInfo || !trenoInfo.codLocOrig || !trenoInfo.id) {
-            return res.status(404).json({ error: 'Treno non trovato o dati incompleti.' });
+            return res.status(404).json({ error: 'Treno non trovato o dati incompleti per questo numero.' });
         }
 
         const idStazioneOrigine = trenoInfo.codLocOrig;
         const idTreno = trenoInfo.id;
 
-        // 2. Chiamata all'andamento reale del treno (usando HTTPS)
         const andamentoRes = await fetch(`https://www.viaggiatreno.it/viaggiatrenonew/resteval/andamentoTreno/${idStazioneOrigine}/${idTreno}`, { headers });
 
         if (!andamentoRes.ok) {
             throw new Error("Errore nel recupero dell'andamento del treno");
         }
 
-        const andamentoData = await andamentoRes.json();
+        const andamentoText = await andamentoRes.text();
+        if (andamentoText.trim().startsWith('<!DOCTYPE') || andamentoText.trim().startsWith('<html')) {
+            return res.status(502).json({ error: "L'andamento del treno ha restituito una pagina HTML non valida." });
+        }
 
+        const andamentoData = JSON.parse(andamentoText);
         return res.status(200).json(andamentoData);
 
     } catch (error) {
