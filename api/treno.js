@@ -42,16 +42,28 @@ export default async function handler(req, res) {
         };
 
         // Estrazione di tutti i blocchi <h2> all'interno di .corpocentrale
-        const h2Matches = [...html.matchAll(/<div class="corpocentrale">\s*<h2[^>]*>(.*?)<\/h2>/gi)].map(m => m[1].replace(/<[^>]*>/g, '').trim());
+        const h2Matches = [...html.matchAll(/<div class="corpocentrale">\s*<h2[^>]*>(.*?)<\/h2>/gi)]
+            .map(m => m[1].replace(/<[^>]*>/g, '').trim())
+            .filter(text => text.length > 0);
 
-        // Il primo è sempre l'origine, l'ultimo è sempre la destinazione finale
-        const stazionePartenzaTreno = h2Matches[0] || "Roma Termini";
-        const stazioneArrivoTreno = h2Matches.length > 1 ? h2Matches[h2Matches.length - 1] : "Minturno-Scauri";
-
-        // Se ci sono 3 blocchi corpocentrale, quello nel mezzo è l'ultima fermata effettuata
+        let stazionePartenzaTreno = "Roma Termini";
+        let stazioneArrivoTreno = "Minturno-Scauri";
         let ultimaFermataDescrizione = "In partenza";
-        if (h2Matches.length >= 3) {
-            ultimaFermataDescrizione = h2Matches[1];
+
+        if (h2Matches.length >= 2) {
+            stazionePartenzaTreno = h2Matches[0];
+            // La vera destinazione finale è quasi sempre l'ultima o la penultima, 
+            // ma ViaggiaTreno mobile mette l'arrivo finale come ultimo blocco o c'è un pattern fisso.
+            // Di solito se ci sono 3 elementi: [Partenza, Ultima Fermata, Arrivo] oppure [Partenza, Arrivo]
+            if (h2Matches.length === 3) {
+                ultimaFermataDescrizione = h2Matches[1];
+                stazioneArrivoTreno = h2Matches[2]; // L'arrivo effettivo resta l'ultimo
+            } else if (h2Matches.length > 3) {
+                ultimaFermataDescrizione = h2Matches[1];
+                stazioneArrivoTreno = h2Matches[h2Matches.length - 1];
+            } else {
+                stazioneArrivoTreno = h2Matches[1];
+            }
         }
 
         // Orari e Binari
@@ -80,7 +92,6 @@ export default async function handler(req, res) {
             binarioRealArrivoDescrizione: "-",
             stazionePartenza: stazionePartenzaTreno,
             stazioneArrivo: stazioneArrivoTreno,
-            // Passiamo l'ultima fermata al frontend
             ultimaFermata: ultimaFermataDescrizione
         });
 
