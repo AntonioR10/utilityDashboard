@@ -111,15 +111,19 @@
                 <div class='modal-body' id='bodyOrario'></div>
             </div>
         </div>
-        <!-- Box Posizione Live del Telefono -->
+                <!-- Box Mappa Posizione Real-Time (Google Maps) -->
         <div class='card'>
-            <h2><span>La Mia Posizione Live</span><span class='badge'>GPS</span></h2>
-            <div style='display: flex; flex-direction: column; gap: 10px; font-size: 13px;'>
-                <div id='infoGps' style='color: var(--muted);'>In attesa di attivazione GPS...</div>
-                <div style='display: flex; gap: 10px;'>
-                    <button class='map-btn' onclick='avviaTracciamentoGPS()' style='flex: 1;'>📍 Attiva GPS</button>
-                    <a id='linkMappaGps' class='map-btn' href='https://maps.app.goo.gl/Rg8d64RC3CJ9ZY5x5' target='_blank' style='flex: 1; display: none; background-color: #28a745; text-align: center;'>🗺️ Apri su Maps</a>
-                </div>
+            <h2><span>Posizione Live (Google Maps)</span><span class='badge'>Live</span></h2>
+            <div style='border-radius: 12px; overflow: hidden; border: 1px solid var(--border);'>
+                <!-- Sostituisci l'URL qui sotto con il tuo iframe o link di Google Maps -->
+                <iframe 
+                    src="https://maps.app.goo.gl/Rg8d64RC3CJ9ZY5x5" 
+                    width="100%" 
+                    height="350" 
+                    style="border:0;" 
+                    allowfullscreen="" 
+                    loading="lazy">
+                </iframe>
             </div>
         </div>
 
@@ -334,42 +338,6 @@
 
             caricaSingoloTreno(trenoAndata, "Andata");
             caricaSingoloTreno(trenoRitorno, "Ritorno");
-        }
-        let watchId = null;
-
-        function avviaTracciamentoGPS() {
-            const infoGps = document.getElementById('infoGps');
-            const linkMappa = document.getElementById('linkMappaGps');
-
-            if (!navigator.geolocation) {
-                infoGps.textContent = "La geolocalizzazione non è supportata dal tuo browser.";
-                return;
-            }
-
-            infoGps.textContent = "Ricerca posizione in corso...";
-
-            // watchPosition traccia i movimenti in tempo reale finché la pagina è aperta
-            watchId = navigator.geolocation.watchPosition(
-                (position) => {
-                    const lat = position.coords.latitude.toFixed(5);
-                    const lon = position.coords.longitude.toFixed(5);
-                    const acc = Math.round(position.coords.accuracy);
-
-                    infoGps.innerHTML = `Lat: <strong>${lat}</strong>, Lon: <strong>${lon}</strong> <br><span style='font-size: 11px; color: var(--muted);'>Accuratezza: ${acc} metri</span>`;
-                    
-                    // Aggiorna il link per aprire direttamente Google Maps con le coordinate attuali
-                    linkMappa.href = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}&z=18`;
-                    linkMappa.style.display = 'inline-block';
-                },
-                (error) => {
-                    infoGps.textContent = `Errore GPS: ${error.message}`;
-                },
-                {
-                    enableHighAccuracy: true,
-                    maximumAge: 0,
-                    timeout: 10000
-                }
-            );
         }
 
 
