@@ -99,6 +99,12 @@ body {
     -webkit-font-smoothing: antialiased;
 }
 
+body:has(.modal-overlay.aperto) .leaflet-control-container,
+body:has(.modal-overlay.aperto) #mappaLive {
+    visibility: hidden;
+    pointer-events: none;
+}
+
 .container {
     width: 100%;
     max-width: 550px;
