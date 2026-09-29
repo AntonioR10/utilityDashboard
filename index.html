@@ -126,18 +126,13 @@
                 <div class='modal-body' id='bodyOrario'></div>
             </div>
         </div>
-                <!-- Box Mappa Posizione Real-Time (Google Maps) -->
+        <!-- Box Mappa Posizione Real-Time (Google Maps) -->
         <div class='card'>
             <h2><span>Posizione Live (Google Maps)</span><span class='badge'>Live</span></h2>
             <div style='border-radius: 12px; overflow: hidden; border: 1px solid var(--border);'>
                 <!-- Sostituisci l'URL qui sotto con il tuo iframe o link di Google Maps -->
-                <iframe 
-                    src="https://maps.app.goo.gl/Rg8d64RC3CJ9ZY5x5" 
-                    width="100%" 
-                    height="350" 
-                    style="border:0;" 
-                    allowfullscreen="" 
-                    loading="lazy">
+                <iframe src="https://maps.app.goo.gl/Rg8d64RC3CJ9ZY5x5" width="100%" height="350" style="border:0;"
+                    allowfullscreen="" loading="lazy">
                 </iframe>
             </div>
         </div>
@@ -355,7 +350,6 @@
             caricaSingoloTreno(trenoRitorno, "Ritorno");
         }
 
-<<<<<<< HEAD
         // --- GESTIONE MAPPA LEAFLET & SUPABASE ---
         let map = null;
         let marker = null;
@@ -405,8 +399,6 @@
         caricaPosizioneDaSupabase();
         setInterval(caricaPosizioneDaSupabase, 30000);
         // -----------------------------------------
-=======
->>>>>>> 7cfad494d546780d3a263802e3eb814dadaf3d53
 
         aggiornaTreni();
         setInterval(aggiornaTreni, 120000);
