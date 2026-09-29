@@ -341,20 +341,41 @@
             caricaSingoloTreno(trenoRitorno, "Ritorno");
         }
 
-        // --- GESTIONE MAPPA LEAFLET & SUPABASE ---
+        // --- GESTIONE MAPPA LEAFLET & SUPABASE CON EFFETTO PING ---
         let map = null;
         let marker = null;
 
+        // Creazione dell'icona personalizzata con effetto ping
+        const pingIcon = L.divIcon({
+            className: 'custom-ping-marker',
+            html: `
+                <div class="pulse-container">
+                    <div class="pulse-ring"></div>
+                    <div class="pulse-dot"></div>
+                </div>
+            `,
+            iconSize: [24, 24],
+            iconAnchor: [12, 12]
+        });
+
         function inizializzaMappa(lat, lon) {
             if (!map) {
-                map = L.map('mappaLive').setView([lat, lon], 16);
+                map = L.map('mappaLive', { zoomControl: false }).setView([lat, lon], 16);
+
+                // Aggiungiamo i controlli dello zoom in alto a destra per pulizia
+                L.control.zoom({ position: 'topright' }).addTo(map);
+
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                     maxZoom: 19,
-                    attribution: '&copy; OpenStreetMap contributors'
+                    attribution: '&copy; OpenStreetMap'
                 }).addTo(map);
-                marker = L.marker([lat, lon]).addTo(map).bindPopup("La mia posizione live").openPopup();
+
+                marker = L.marker([lat, lon], { icon: pingIcon }).addTo(map)
+                    .bindPopup("<b>Posizione Live</b><br>Ultimo aggiornamento dal GPS")
+                    .openPopup();
             } else {
-                map.setView([lat, lon], 16);
+                // Spostamento fluido della mappa verso la nuova posizione
+                map.panTo([lat, lon], { animate: true, duration: 1.0 });
                 marker.setLatLng([lat, lon]);
             }
         }
@@ -373,14 +394,10 @@
 
                 const data = await response.json();
 
-                // CONTROLLO DA CONSOLE
-                console.log("Dati ricevuti da Supabase:", data);
-
                 if (data && data.length > 0) {
-                    console.log("Coordinate trovate:", data[0].lat, data[0].lon);
                     inizializzaMappa(data[0].lat, data[0].lon);
                 } else {
-                    console.warn("La tabella è vuota o la query non ha trovato risultati! Uso fallback (Repubblica).");
+                    console.warn("Nessuna posizione trovata, uso fallback.");
                     inizializzaMappa(41.90278, 12.49636);
                 }
             } catch (e) {
@@ -388,6 +405,10 @@
                 inizializzaMappa(41.90278, 12.49636);
             }
         }
+
+        // Avvio e aggiornamento periodico della posizione (ogni 30 secondi)
+        caricaPosizioneDaSupabase();
+        setInterval(caricaPosizioneDaSupabase, 30000);
 
         // Avvio e aggiornamento periodico della posizione (ogni 30 secondi)
         caricaPosizioneDaSupabase();
