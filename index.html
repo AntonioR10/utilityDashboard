@@ -362,7 +362,7 @@
         async function caricaPosizioneDaSupabase() {
             try {
                 // SOSTITUISCI CON IL TUO URL DI SUPABASE E LA TUA ANON KEY
-                const supabaseUrl = 'https://qvqphqpzlkazpjbkylhq.supabase.co/rest/v1/posizioni?select=lat,lon&order=created_at.desc&limit=1';
+                const supabaseUrl = 'https://qvqphqpzlkazpjbkylhq.supabase.co/rest/v1/posizioni?select=lat,lon&id=eq.1';
                 const apiKey = 'sb_publishable_4voqWIlbJe3WtJIySHyACw_fArau_Xc';
 
                 const response = await fetch(supabaseUrl, {
