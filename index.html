@@ -292,7 +292,7 @@
                 let arr = treno.orarioArrivo ? new Date(treno.orarioArrivo).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "--:--";
                 let bin = treno.binarioRealPartenzaDescrizione || treno.binarioPrevistoPartenzaDescrizione || "-";
                 let binArr = treno.binarioRealArrivoDescrizione || treno.binarioPrevistoPartenzaDescrizione || "-";
-                let stazionePart = treno.stazionePartenzaTreno || "Minturno";
+                let stazionePart = treno.stazionePartenza || "Minturno";
                 let posizione = treno.ultimaFermata || "Arrivato/Non Partito";
 
                 if (treno.provvedimento === 1) {
