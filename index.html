@@ -7,6 +7,12 @@
     <title>Utility Dashboard</title>
     <link rel='icon' href='https://gossipmap.altervista.org/sapLogo.png' type='image/png'>
     <link href='https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap' rel='stylesheet'>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <!-- CSS Esterno Collegato -->
     <link rel='stylesheet' href='style.css'>
 </head>
@@ -28,6 +34,15 @@
                 <div class='info-item'><span class='emoji' id='meteoIcon'>🌤️</span>
                     <div><span>Meteo (Roma)</span><strong id='meteoLive'>Aggiornamento...</strong></div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Box Mappa Posizione Live (Leaflet + Supabase) -->
+        <div class='card'>
+            <h2><span>Posizione Live</span><span class='badge'>GPS</span></h2>
+            <div style='display: flex; flex-direction: column; gap: 10px;'>
+                <div id="mappaLive"
+                    style="width: 100%; height: 280px; border-radius: 12px; border: 1px solid var(--border);"></div>
             </div>
         </div>
 
@@ -323,6 +338,56 @@
             caricaSingoloTreno(trenoAndata, "Andata");
             caricaSingoloTreno(trenoRitorno, "Ritorno");
         }
+
+        // --- GESTIONE MAPPA LEAFLET & SUPABASE ---
+        let map = null;
+        let marker = null;
+
+        function inizializzaMappa(lat, lon) {
+            if (!map) {
+                map = L.map('mappaLive').setView([lat, lon], 16);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '&copy; OpenStreetMap contributors'
+                }).addTo(map);
+                marker = L.marker([lat, lon]).addTo(map).bindPopup("La mia posizione live").openPopup();
+            } else {
+                map.setView([lat, lon], 16);
+                marker.setLatLng([lat, lon]);
+            }
+        }
+
+        async function caricaPosizioneDaSupabase() {
+            try {
+                // SOSTITUISCI CON IL TUO URL DI SUPABASE E LA TUA ANON KEY
+                const supabaseUrl = 'https://qvqphqpzlkazpjbkylhq.supabase.co/rest/v1/posizioni?select=lat,lon&order=timestamp.desc&limit=1';
+                const apiKey = 'sb_publishable_4voqWIlbJe3WtJIySHyACw_fArau_Xc';
+
+                const response = await fetch(supabaseUrl, {
+                    headers: {
+                        'apikey': apiKey,
+                        'Authorization': `Bearer ${apiKey}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data && data.length > 0) {
+                    inizializzaMappa(data[0].lat, data[0].lon);
+                } else {
+                    // Fallback iniziale su Roma se non ci sono ancora dati nel database
+                    inizializzaMappa(41.90278, 12.49636);
+                }
+            } catch (e) {
+                console.error("Errore nel recupero della posizione", e);
+                inizializzaMappa(41.90278, 12.49636);
+            }
+        }
+
+        // Avvio e aggiornamento periodico della posizione (ogni 30 secondi)
+        caricaPosizioneDaSupabase();
+        setInterval(caricaPosizioneDaSupabase, 30000);
+        // -----------------------------------------
 
         aggiornaTreni();
         setInterval(aggiornaTreni, 120000);
