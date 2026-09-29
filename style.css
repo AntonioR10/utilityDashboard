@@ -32,6 +32,19 @@
     -webkit-tap-highlight-color: transparent;
 }
 
+/* Filtro Dark Mode per la mappa Leaflet */
+.leaflet-layer,
+.leaflet-control-zoom-in,
+.leaflet-control-zoom-out,
+.leaflet-control-attribution {
+    filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+}
+
+.leaflet-container {
+    background-color: #121212 !important;
+    /* Sfondo scuro durante il caricamento */
+}
+
 /* Stile per l'effetto Ping / Pulsazione sulla mappa */
 .pulse-container {
     position: relative;
