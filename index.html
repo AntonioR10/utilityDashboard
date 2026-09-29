@@ -54,7 +54,7 @@
                     <div
                         style='display: flex; justify-content: space-between; align-items: center; font-size: 11px; text-align: center;'>
                         <div style='flex: 1; text-align: left;'>
-                            <strong id='sAndata'>-</strong> <strong id='partAndata'>--:--</strong> <span
+                            <p id='spAndata'>-</p> <strong id='partAndata'>--:--</strong> <span
                                 style='color: var(--muted);'><br>(Bin. <span id='binAndata'>-</span>)</span>
                         </div>
                         <span style='color: var(--muted);'>➔</span>
@@ -298,7 +298,7 @@
                 if (treno.provvedimento === 1) {
                     stato = "CANCELLATO";
                 }
-                document.getElementById(`s${prefisso}`).textContent = stazionePart;
+                document.getElementById(`sp${prefisso}`).textContent = stazionePart;
                 document.getElementById(`stato${prefisso}`).textContent = `🚆 ${prefisso} (${numeroTreno}): ${stato}`;
                 document.getElementById(`part${prefisso}`).textContent = part;
                 document.getElementById(`binArr${prefisso}`).textContent = binArr;
