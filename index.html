@@ -298,8 +298,8 @@
                 if (treno.provvedimento === 1) {
                     stato = "CANCELLATO";
                 }
-                document.getElementById('s${prefisso}').textContent =
-                    document.getElementById(`stato${prefisso}`).textContent = `🚆 ${prefisso} (${numeroTreno}): ${stato}`;
+                document.getElementById('s${prefisso}').textContent = stazionePart;
+                document.getElementById(`stato${prefisso}`).textContent = `🚆 ${prefisso} (${numeroTreno}): ${stato}`;
                 document.getElementById(`part${prefisso}`).textContent = part;
                 document.getElementById(`binArr${prefisso}`).textContent = binArr;
                 document.getElementById(`bin${prefisso}`).textContent = bin;
