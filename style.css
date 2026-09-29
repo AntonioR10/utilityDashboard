@@ -318,7 +318,7 @@ li.corrente .map-btn {
     inset: 0;
     background: rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(4px);
-    z-index: 100;
+    z-index: 1000;
     align-items: flex-end;
     justify-content: center;
     padding: 0;
