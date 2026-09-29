@@ -371,8 +371,6 @@
                 }).addTo(map);
 
                 marker = L.marker([lat, lon], { icon: pingIcon }).addTo(map)
-                    .bindPopup("<b>Posizione Live</b><br>Ultimo aggiornamento dal GPS")
-                    .openPopup();
             } else {
                 map.panTo([lat, lon], { animate: true, duration: 1.0 });
                 marker.setLatLng([lat, lon]);
