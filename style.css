@@ -32,6 +32,13 @@
     -webkit-tap-highlight-color: transparent;
 }
 
+.treno-freccia {
+    color: var(--muted);
+    padding: 0 6px;
+    /* Aggiunge spazio ai lati della freccia */
+    flex-shrink: 0;
+}
+
 /* Filtro Dark Mode per la mappa Leaflet */
 .leaflet-layer,
 .leaflet-control-zoom-in,
