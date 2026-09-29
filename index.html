@@ -62,8 +62,8 @@
                             --
                         </div>
                         <span style='color: var(--muted);'>➔</span>
-                        <div style='flex: 1; text-align: right;'>
-                            Roma Termini: <strong id='arrAndata'>--:--</strong><span
+                        <div style='flex: 1; text-align: left; white-space: nowrap;'>
+                            <span id='saAndata'>N/D</span>: <strong id='arrAndata'>--:--</strong><span
                                 style='color: var(--muted);'><br>(Bin. <span id='binArrAndata'>-</span>)</span>
                         </div>
                     </div>
@@ -87,8 +87,8 @@
                             --
                         </div>
                         <span style='color: var(--muted);'>➔</span>
-                        <div style='flex: 1; text-align: right;'>
-                            Minturno-Scauri: <strong id='arrRitorno'>--:--</strong>
+                        <div style='flex: 1; text-align: left; white-space: nowrap;'>
+                            <span id='saRitorno'>N/D</span>: <strong id='arrRitorno'>--:--</strong>
                             <span style='color: var(--muted);'><br>(Bin. <span id='binArrRitorno'>-</span>)</span>
                         </div>
                     </div>
@@ -300,7 +300,7 @@
                     stato = "CANCELLATO";
                 }
                 document.getElementById(`sp${prefisso}`).textContent = stazionePart;
-                document.getElementById().textContent = stazioneArrivo;
+                document.getElementById(`sa${prefisso}`).textContent = stazioneArrivo;
                 document.getElementById(`stato${prefisso}`).textContent = `🚆 ${prefisso} (${numeroTreno}): ${stato}`;
                 document.getElementById(`part${prefisso}`).textContent = part;
                 document.getElementById(`binArr${prefisso}`).textContent = binArr;
