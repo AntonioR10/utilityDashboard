@@ -54,7 +54,7 @@
                     <div
                         style='display: flex; justify-content: space-between; align-items: center; font-size: 11px; text-align: center;'>
                         <div style='flex: 1; text-align: left; white-space: nowrap;'>
-                            <span id='spAndata'>N/D</span> <span id='partAndata'>--:--</span>
+                            <span id='spAndata'>N/D</span>: <strong id='partAndata'>--:--</strong>
                             <span style='color: var(--muted);'><br>(Bin. <span id='binAndata'>-</span>)</span>
                         </div>
                         <span style='color: var(--muted);'>➔</span>
@@ -79,7 +79,7 @@
                     <div
                         style='display: flex; justify-content: space-between; align-items: center; font-size: 11px; text-align: center;'>
                         <div style='flex: 1; text-align: left; white-space: nowrap;'>
-                            <span id='spRitorno'>N/D</span> <span id='partRitorno'>--:--</span>
+                            <span id='spRitorno'>N/D</span>: <strong id='partRitorno'>--:--</strong>
                             <span style='color: var(--muted);'><br>(Bin. <span id='binRitorno'>-</span>)</span>
                         </div>
                         <span style='color: var(--muted);'>➔</span>
@@ -292,7 +292,7 @@
                 let arr = treno.orarioArrivo ? new Date(treno.orarioArrivo).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "--:--";
                 let bin = treno.binarioRealPartenzaDescrizione || treno.binarioPrevistoPartenzaDescrizione || "-";
                 let binArr = treno.binarioRealArrivoDescrizione || treno.binarioPrevistoPartenzaDescrizione || "-";
-                let stazionePart = treno.stazionePartenza || "Minturno";
+                let stazionePart = formattaIniziali(treno.stazionePartenza || "Minturno");
                 let posizione = treno.ultimaFermata || "Arrivato/Non Partito";
 
                 if (treno.provvedimento === 1) {
@@ -310,6 +310,13 @@
                 console.error(err);
                 document.getElementById(`stato${prefisso}`).textContent = `🚆 ${prefisso} (${numeroTreno}): Errore dati`;
             }
+        }
+
+        function formattaIniziali(testo) {
+            if (!testo) return "";
+            return testo.toLowerCase().split(' ').map(parola =>
+                parola.split('-').map(p => p.charAt(0).toUpperCase() + p.slice(1)).join('-')
+            ).join(' ');
         }
 
         function aggiornaTreni() {
