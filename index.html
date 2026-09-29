@@ -54,7 +54,7 @@
                     <div
                         style='display: flex; justify-content: space-between; align-items: center; font-size: 11px; text-align: center;'>
                         <div style='flex: 1; text-align: left;'>
-                            Minturno-Scauri: <strong id='partAndata'>--:--</strong> <span
+                            <strong id='sAndata'>N/D</strong> <strong id='partAndata'>--:--</strong> <span
                                 style='color: var(--muted);'><br>(Bin. <span id='binAndata'>-</span>)</span>
                         </div>
                         <span style='color: var(--muted);'>➔</span>
@@ -292,13 +292,14 @@
                 let arr = treno.orarioArrivo ? new Date(treno.orarioArrivo).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "--:--";
                 let bin = treno.binarioRealPartenzaDescrizione || treno.binarioPrevistoPartenzaDescrizione || "-";
                 let binArr = treno.binarioRealArrivoDescrizione || treno.binarioPrevistoPartenzaDescrizione || "-";
+                let stazionePart = tren.stazionePartenzaTreno || "Minturno";
                 let posizione = treno.ultimaFermata || "Arrivato/Non Partito";
 
                 if (treno.provvedimento === 1) {
                     stato = "CANCELLATO";
                 }
-
-                document.getElementById(`stato${prefisso}`).textContent = `🚆 ${prefisso} (${numeroTreno}): ${stato}`;
+                document.getElementById('s${prefisso}').textContent =
+                    document.getElementById(`stato${prefisso}`).textContent = `🚆 ${prefisso} (${numeroTreno}): ${stato}`;
                 document.getElementById(`part${prefisso}`).textContent = part;
                 document.getElementById(`binArr${prefisso}`).textContent = binArr;
                 document.getElementById(`bin${prefisso}`).textContent = bin;
